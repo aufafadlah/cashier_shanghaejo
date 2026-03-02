@@ -1,61 +1,44 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+🥟 Cashier Shanghaejo: Enterprise Multi-Outlet POS Solution
+Cashier Shanghaejo adalah sistem manajemen kasir modern berbasis web yang dikembangkan menggunakan Laravel 11. Fokus utama aplikasi ini adalah efisiensi operasional kuliner skala menengah-atas dengan manajemen multi-cabang terpusat, kontrol inventaris yang ketat, dan integritas data keuangan yang absolut.
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+🛠️ Arsitektur Sistem & Fitur Unggulan
+🛡️ Keamanan & Kontrol Akses (Admin)
+Admin memiliki kontrol penuh sebagai Superuser untuk menjaga stabilitas bisnis di semua titik:
 
-## About Laravel
+Centralized Branch Control: Fitur Kill-Switch yang memungkinkan Admin menonaktifkan cabang secara instan. Jika cabang dinonaktifkan, akses login kasir tertutup namun data historis tetap tersimpan permanen.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Inventory & Raw Material Tracking: Manajemen pembelian bahan baku (tb_beli_bahan) yang terintegrasi langsung untuk menghitung laba bersih.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Daily Stock Target: Sistem pembatasan penjualan berdasarkan stok harian (tb_target) untuk mencegah over-selling.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+User Management: Pengelolaan user terpusat untuk menghindari registrasi tidak sah (tidak ada fitur daftar mandiri).
 
-## Learning Laravel
+⚡ Transaksi & Integritas Data (Kasir)
+Sisi kasir dioptimalkan untuk kecepatan dan keakuratan data:
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+Price Snapshot Logic: Setiap transaksi menyimpan harga dan nama menu pada saat itu juga ke dalam harga_snapshot. Laporan keuangan tidak akan berubah meskipun harga master diupdate di kemudian hari.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Multi-Topping Integration: Sistem pemilihan topping yang fleksibel dengan kalkulasi subtotal otomatis.
 
-## Laravel Sponsors
+Real-time Void System: Pembatalan transaksi dengan status gagal (bukan dihapus) guna menjaga integritas audit (mencegah kecurangan kasir).
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+📈 Dashboard & Analitik
+Sistem ini menyediakan visualisasi data untuk mempermudah pengambilan keputusan:
 
-### Premium Partners
+Dashboard Monitoring: Ringkasan Omzet, Pengeluaran, dan Profitabilitas harian dalam bentuk grafik interaktif.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+Laporan Target vs Realisasi: Memantau efisiensi penjualan setiap menu dibandingkan dengan target stok yang ditetapkan.
 
-## Contributing
+Multi-Payment Analytics: Laporan metode pembayaran (Cash vs QRIS) untuk mempermudah rekonsiliasi kas harian.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+💻 Tech Stack
+Framework: Laravel 11 (Latest Version)
 
-## Code of Conduct
+UI Engine: Blade Templating + [Tailwind CSS/Bootstrap]
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Database: MySQL (Optimized with Snapshots & Soft Disable logic)
 
-## Security Vulnerabilities
+Charts: Chart.js
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
-"# cashier_shanghaejo" 
-"# cashier_shanghaejo" 
+📝 Catatan Penting untuk Penguji
+Proyek ini mengimplementasikan prinsip Data Persistence. Tidak ada data transaksi yang benar-benar dihapus dari sistem. Jika terjadi kesalahan, status transaksi diubah menjadi gagal, memastikan jejak audit tetap utuh dan laporan keuangan dapat dipertanggungjawabkan 100%.
