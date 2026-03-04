@@ -15,9 +15,7 @@ return new class extends Migration
     $table->id('id_user');
     $table->string('name', 100);
     $table->string('username', 100)->unique();
-    $table->foreignId('id_cabang')
-          ->constrained('tb_cabang','id_cabang')
-          ->cascadeOnDelete();
+    $table->unsignedBigInteger('id_cabang');
     $table->string('password', 225);
     $table->enum('role', ['admin','kasir']);
     $table->boolean('is_active')->default(true);

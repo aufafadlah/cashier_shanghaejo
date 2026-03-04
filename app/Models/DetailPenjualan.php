@@ -8,10 +8,14 @@ class DetailPenjualan extends Model
 {
     protected $table = 'tb_detail_penjualan';
     protected $primaryKey = 'id_detail_penjualan';
-    public $timestamps = false;
 
-    public function menu()
-    {
-        return $this->belongsTo(Menu::class, 'id_menu');
-    }
+    protected $fillable = [
+        'id_penjualan',
+        'id_menu',
+        'qty',
+        'harga_snapshot',
+        'subtotal'
+    ];
+
+    public $timestamps = false;
 }

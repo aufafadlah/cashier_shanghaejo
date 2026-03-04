@@ -9,21 +9,29 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
-    {
-        Schema::create('tb_beli_bahan', function (Blueprint $table) {
-    $table->id('id_pengeluaran');
-    $table->foreignId('id_cabang')
-          ->constrained('tb_cabang','id_cabang');
-    $table->string('nama_barang');
-    $table->integer('qty');
-    $table->decimal('harga_satuan', 15, 2);
-    $table->decimal('harga_total', 15, 2);
-    $table->dateTime('tgl');
-    $table->text('keterangan')->nullable();
-    $table->string('supplier', 100)->nullable();
-});
-    }
+   public function up(): void
+{
+    Schema::create('tb_beli_bahan', function (Blueprint $table) {
+        // 1. Primary Key Utama (Sudah otomatis jadi PK)
+        $table->id('id_pengeluaran');
+
+        // 2. Buat kolom id_cabang untuk keperluan Join (Wajib ada!)
+        $table->unsignedBigInteger('id_cabang');
+
+        // 3. Kolom data lainnya
+        $table->string('nama_barang');
+        $table->integer('qty');
+        $table->decimal('harga_satuan', 15, 2);
+        $table->decimal('harga_total', 15, 2);
+        $table->dateTime('tgl');
+        $table->text('keterangan')->nullable();
+        $table->string('supplier', 100)->nullable();
+        $table->timestamps();
+
+        // 4. Tambahkan Index (Agar proses Join ke tabel cabang lebih cepat)
+        $table->index('id_cabang');
+    });
+}
 
     /**
      * Reverse the migrations.
