@@ -13,14 +13,11 @@ return new class extends Migration
     {
         Schema::create('tb_target', function (Blueprint $table) {
     $table->id('id_target');
-    $table->foreignId('id_cabang')
-          ->constrained('tb_cabang','id_cabang');
-    $table->foreignId('id_menu')
-          ->constrained('tb_menu','id_menu');
     $table->date('tanggal');
     $table->integer('stok_target');
     $table->integer('over_target')->default(0);
     $table->timestamps();
+    $table->primary(['id_cabang', 'id_menu']);
 });
     }
 

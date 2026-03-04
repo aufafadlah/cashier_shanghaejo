@@ -6,13 +6,16 @@ use Illuminate\Database\Eloquent\Model;
 
 class Target extends Model
 {
-    public function cabang()
-{
-    return $this->belongsTo(Cabang::class, 'id_cabang');
-}
+    protected $table = 'tb_target';
+    protected $primaryKey = 'id_target';
 
-public function menu()
-{
-    return $this->belongsTo(Menu::class, 'id_menu');
-}
+    protected $fillable = [
+        'id_cabang',
+        'id_menu',
+        'tanggal',
+        'stok_target',
+        'over_target'
+    ];
+
+    public $timestamps = true;
 }

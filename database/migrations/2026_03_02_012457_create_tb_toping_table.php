@@ -15,6 +15,8 @@ return new class extends Migration
     $table->id('id_toping');
     $table->string('nama_toping', 100);
     $table->decimal('harga_toping', 15, 2);
+    $table->boolean('is_active')->default(true);
+   
 });
     }
 

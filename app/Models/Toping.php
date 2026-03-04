@@ -9,8 +9,10 @@ class Toping extends Model
     protected $table = 'tb_toping';
     protected $primaryKey = 'id_toping';
 
-    public function detailToping()
-    {
-        return $this->hasMany(DetailPenjualanToping::class, 'id_toping');
-    }
+    protected $fillable = [
+        'nama_toping',
+        'harga_toping'
+    ];
+
+    public $timestamps = false;
 }

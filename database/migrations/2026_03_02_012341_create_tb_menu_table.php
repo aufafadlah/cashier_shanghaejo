@@ -15,7 +15,7 @@ return new class extends Migration
     $table->id('id_menu');
     $table->string('nama_menu', 100);
     $table->decimal('harga_menu', 15, 2);
-    $table->enum('status_menu', ['aktif','nonaktif']);
+    $table->boolean('is_active')->default(true);
     $table->timestamps();
 });
     }

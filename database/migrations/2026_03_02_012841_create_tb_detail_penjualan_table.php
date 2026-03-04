@@ -13,14 +13,11 @@ return new class extends Migration
     {
         Schema::create('tb_detail_penjualan', function (Blueprint $table) {
     $table->id('id_detail_penjualan');
-    $table->foreignId('id_penjualan')
-          ->constrained('tb_penjualan','id_penjualan')
-          ->cascadeOnDelete();
-    $table->foreignId('id_menu')
-          ->constrained('tb_menu','id_menu');
     $table->integer('qty');
     $table->decimal('harga_snapshot', 15, 2);
     $table->decimal('subtotal', 15, 2);
+   $table->primary(['id_penjualan', 'id_menu']);
+    
 });
     }
 
