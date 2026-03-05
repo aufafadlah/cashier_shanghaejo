@@ -40,26 +40,29 @@ class CabangController extends Controller
     /**
      * Proses Simpan Cabang Baru ke Database
      */
-    public function store(Request $request)
-    {
-        // 1. Validasi Input
-        $request->validate([
-            'nama_cabang' => 'required',
-            'alamat'      => 'required',
-        ]);
+public function store(Request $request)
+{
+    // 1️⃣ Validasi
+    $request->validate([
+        'nama_cabang' => 'required',
+        'alamat'      => 'required',
+        'is_active'   => 'nullable|boolean',
+    ]);
 
-        // 2. Simpan Data ke tb_cabang
-        DB::table('tb_cabang')->insert([
-            'nama_cabang' => $request->nama_cabang,
-            'alamat'      => $request->alamat,
-            'is_active'   => 1, // Default aktif
-            'created_at'  => now(),
-            'updated_at'  => now(),
-        ]);
+    // 2️⃣ Simpan ke DB
+    DB::table('tb_cabang')->insert([
+        'nama_cabang' => $request->nama_cabang,
+        'alamat'      => $request->alamat,
+        'is_active'   => $request->boolean('is_active'), // ⭐ KUNCI
+        'created_at'  => now(),
+        'updated_at'  => now(),
+    ]);
 
-        // 3. Kembali ke halaman tabel dengan pesan sukses
-        return redirect()->route('cabang.index')->with('success', 'Cabang baru berhasil didaftarkan!');
-    }
+    // 3️⃣ Redirect
+    return redirect()
+        ->route('cabang.index')
+        ->with('success', 'Cabang berhasil ditambahkan');
+}
 
     /**
      * Tampilkan Form Edit Cabang
@@ -100,4 +103,12 @@ class CabangController extends Controller
         DB::table('tb_cabang')->where('id_cabang', $id)->delete();
         return redirect()->route('cabang.index')->with('success', 'Cabang telah dihapus!');
     }
+public function show($id)
+{
+    // Cari data berdasarkan ID manual karena di web.php kamu pakai {id}
+    $cabang = \App\Models\Cabang::findOrFail($id);
+    
+    // Pastikan path view benar: admin.cabang.show
+    return view('admin.cabang.show', compact('cabang'));
+}
 }
