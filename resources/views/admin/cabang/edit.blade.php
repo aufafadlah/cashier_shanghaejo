@@ -29,12 +29,14 @@
                     <label class="text-sm font-medium">Nama Cabang</label>
                     <input type="text" name="nama_cabang"
                         value="{{ old('nama_cabang', $cabang->nama_cabang) }}"
+                        placeholder="Ubah nama cabang"
                         class="w-full mt-1 px-3 py-2 border rounded-md focus:ring focus:ring-green-200">
                 </div>
 
                 <div>
                     <label class="text-sm font-medium">Alamat</label>
                     <textarea name="alamat" rows="3"
+                    placeholder="Ubah alamat cabang"
                         class="w-full mt-1 px-3 py-2 border rounded-md focus:ring focus:ring-green-200">{{ old('alamat', $cabang->alamat) }}</textarea>
                 </div>
 
