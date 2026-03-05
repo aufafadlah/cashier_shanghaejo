@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 @extends('layouts.app')
 
 @section('content')
@@ -168,3 +169,6 @@ function removeToast(id) {
 </script>
 </script>
 @endsection
+=======
+ 
+>>>>>>> origin/farida
