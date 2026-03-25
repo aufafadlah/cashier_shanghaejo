@@ -1,36 +1,40 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="flex items-center justify-center min-h-screen">
-    <div class="bg-white w-[350px] rounded-2xl shadow-lg p-6 border">
-        <h2 class="font-bold text-gray-800 mb-6 border-b pb-2">Update Topping</h2>
-        
-        <form action="{{ route('toping.update', $toping->id_toping) }}" method="POST" class="space-y-4">
-            @csrf
-            @method('PUT')
-            <div>
-                <label class="text-xs font-bold text-gray-600 block mb-1">Nama Topping</label>
-                <input type="text" name="nama_toping" value="{{ $toping->nama_toping }}" class="w-full border rounded p-2 text-sm focus:outline-green-500" required>
-            </div>
-
-            <div>
-                <label class="text-xs font-bold text-gray-600 block mb-1">Harga</label>
-                <input type="number" name="harga_toping" value="{{ $toping->harga_toping }}" class="w-full border rounded p-2 text-sm focus:outline-green-500" required>
-            </div>
-
-            <div>
-                <label class="text-xs font-bold text-gray-600 block mb-1">Status</label>
-                <select name="is_active" class="w-full border rounded p-2 text-sm focus:outline-green-500">
-                    <option value="1" {{ $toping->is_active == 1 ? 'selected' : '' }}>Aktif</option>
-                    <option value="0" {{ $toping->is_active == 0 ? 'selected' : '' }}>Non-Aktif</option>
-                </select>
-            </div>
-
-            <div class="flex gap-2 pt-2">
-                <button type="submit" class="bg-green-500 text-white px-4 py-1 rounded text-xs">Update</button>
-                <a href="{{ route('toping.index') }}" class="bg-red-500 text-white px-4 py-1 rounded text-xs">Batal</a>
-            </div>
-        </form>
+<x-modal-form 
+    title="Edit Data Topping" 
+    :action="route('admin.toping.update', $toping->id_toping)" 
+    method="PUT" 
+    :cancelUrl="route('admin.toping.index')"
+>
+    {{-- Nama --}}
+    <div>
+        <label class="text-sm font-medium text-gray-700">Nama Topping</label>
+        <input type="text" name="nama_toping" 
+            value="{{ old('nama_toping', $toping->nama_toping) }}"
+            class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-100 focus:border-green-400 outline-none transition-all"
+            placeholder="Contoh "
+            required>
     </div>
-</div>
+
+    {{-- Harga --}}
+    <div>
+        <label class="text-sm font-medium text-gray-700">Harga Topping (Rp)</label>
+        <input type="number" name="harga_toping" 
+            value="{{ old('harga_menu', $toping->harga_toping) }}"
+            class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-100 focus:border-green-400 outline-none transition-all"
+            placeholder="0"
+            required>
+    </div>
+
+    {{-- Status --}}
+    <div>
+        <label class="text-sm font-medium text-gray-700">Status Ketersediaan</label>
+        <select name="is_active" 
+            class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-100 focus:border-green-400 outline-none transition-all">
+            <option value="1" {{ old('is_active', $toping->is_active) == 1 ? 'selected' : '' }}>Tersedia (Aktif)</option>
+            <option value="0" {{ old('is_active', $toping->is_active) == 0 ? 'selected' : '' }}>Habis (Non-Aktif)</option>
+        </select>
+    </div>
+</x-modal-form>
 @endsection

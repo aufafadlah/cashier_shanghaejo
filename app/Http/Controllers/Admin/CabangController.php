@@ -60,7 +60,7 @@ public function store(Request $request)
 
     // 3️⃣ Redirect
     return redirect()
-        ->route('cabang.index')
+        ->route('admin.cabang.index')
         ->with('success', 'Cabang berhasil ditambahkan');
 }
 
@@ -92,7 +92,7 @@ public function store(Request $request)
             'updated_at'  => now(),
         ]);
 
-        return redirect()->route('cabang.index')->with('success', 'Data cabang diperbarui!');
+        return redirect()->route('admin.cabang.index')->with('success', 'Data cabang diperbarui!');
     }
 
     /**
@@ -101,7 +101,7 @@ public function store(Request $request)
     public function destroy($id)
     {
         DB::table('tb_cabang')->where('id_cabang', $id)->delete();
-        return redirect()->route('cabang.index')->with('success', 'Cabang telah dihapus!');
+        return redirect()->route('admin.cabang.index')->with('success', 'Cabang telah dihapus!');
     }
 public function show($id)
 {

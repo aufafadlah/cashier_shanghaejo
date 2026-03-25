@@ -10,13 +10,14 @@ class ToppingController extends Controller
 {
     public function index()
     {
-        $toppings = DB::table('tb_toping')->get();
-        $totalTopping = $toppings->count();
-        $aktif = $toppings->where('is_active', 1)->count();
-        $nonAktif = $toppings->where('is_active', 0)->count();
+        $topings = DB::table('tb_toping')->get();
+        $totalToping = $topings->count();
+        $aktif = $topings->where('is_active', 1)->count();
+        $nonAktif = $topings->where('is_active', 0)->count();
 
 // Tambahkan 'admin.' di depannya
-return view('admin.toping.index', compact('toppings', 'totalTopping', 'aktif', 'nonAktif'));    }
+    return view('admin.toping.index', compact('topings', 'totalToping', 'aktif', 'nonAktif'));    
+    }
 
  
 public function create()
@@ -40,7 +41,7 @@ public function create()
         'is_active'    => $request->is_active,
     ]);
 
-    return redirect()->route('toping.index')->with('success', 'Topping berhasil ditambah!');
+    return redirect()->route('admin.toping.index')->with('success', 'Topping berhasil ditambah!');
 }
 
 public function edit($id)
@@ -69,11 +70,11 @@ public function edit($id)
     ]);
 
     // 3. Redirect kembali
-    return redirect()->route('toping.index')->with('success', 'Topping berhasil diupdate!');
+    return redirect()->route('admin.toping.index')->with('success', 'Topping berhasil diupdate!');
 }
     public function destroy($id)
     {
         DB::table('tb_toping')->where('id_toping', $id)->delete();
-        return redirect()->route('toping.index')->with('success', 'Topping berhasil dihapus!');
+        return redirect()->route('admin.toping.index')->with('success', 'Topping berhasil dihapus!');
     }
 }

@@ -2,26 +2,39 @@
 
 namespace App\Models;
 
+// 1. TAMBAHKAN IMPORT INI
+use Illuminate\Foundation\Auth\User as Authenticatable; 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Notifications\Notifiable;
 
-class User extends Model
+// 2. UBAH 'extends Model' MENJADI 'extends Authenticatable'
+class User extends Authenticatable 
 {
-    use HasFactory;
+    use HasFactory, Notifiable;
+
     protected $table = 'tb_user';
     protected $primaryKey = 'id_user';
 
     protected $fillable = [
-        'nama',
+        'name',
         'username',
         'id_cabang',
         'password',
         'role',
-
         'is_active'
-        ];
-        protected $casts = [
-        'is_active' => 'boolean'
-        ];
-        public $timestamps = true;
+    ];
+
+    // 3. TAMBAHKAN CASTS UNTUK PASSWORD AGAR TER-ENKRIPSI OTOMATIS
+    protected $casts = [
+        'is_active' => 'boolean',
+        'password' => 'hashed', // Sangat penting untuk fitur Ubah Password
+    ];
+
+    public $timestamps = true;
+
+    // 4. TAMBAHKAN RELASI CABANG (Opsional tapi berguna untuk tampilan Profil)
+    public function cabang()
+    {
+        return $this->belongsTo(Cabang::class, 'id_cabang', 'id_cabang');
+    }
 }

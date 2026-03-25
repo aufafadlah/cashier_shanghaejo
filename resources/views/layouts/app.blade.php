@@ -4,37 +4,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    
-    <title>@yield('title', 'ShangHaejo POS')</title>
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    
+    <title>@yield('title', 'POS Resto')</title>
+
+    <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
+    <!-- Alpine -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    
+
+    <!-- Chart -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+
+    <!-- SweetAlert -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
+
     <style>
         [x-cloak] { display: none !important; }
     </style>
-    
+
     @stack('styles')
 </head>
+
 <body class="bg-gray-100">
 
-    @include('layouts.sidebar')
+    @yield('content')
 
-    <div class="sm:ml-64 min-h-screen">
-        
-        <main class="p-4 sm:p-6">
-            @yield('content')
-        </main>
-        
-    </div>
+    @include('components.toast')
 
     @stack('scripts')
+
 </body>
 </html>
