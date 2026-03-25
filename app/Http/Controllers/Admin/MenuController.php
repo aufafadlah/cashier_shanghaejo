@@ -39,7 +39,7 @@ class MenuController extends Controller
             'updated_at' => now(),
         ]);
 
-        return redirect()->route('menu.index')->with('success', 'Menu berhasil ditambah!');
+        return redirect()->route('admin.menu.index')->with('success', 'Menu berhasil ditambah!');
     }
 
     public function edit($id)
@@ -47,7 +47,7 @@ class MenuController extends Controller
         $menu = DB::table('tb_menu')->where('id_menu', $id)->first();
         
         if (!$menu) {
-            return redirect()->route('menu.index')->with('error', 'Data tidak ditemukan!');
+            return redirect()->route('admin.menu.index')->with('error', 'Data tidak ditemukan!');
         }
 
         // Memanggil file edit.blade.php
@@ -69,12 +69,12 @@ class MenuController extends Controller
             'updated_at' => now(),
         ]);
 
-        return redirect()->route('menu.index')->with('success', 'Menu berhasil diupdate!');
+        return redirect()->route('admin.menu.index')->with('success', 'Menu berhasil diupdate!');
     }
 
     public function destroy($id)
     {
         DB::table('tb_menu')->where('id_menu', $id)->delete();
-        return redirect()->route('menu.index')->with('success', 'Menu berhasil dihapus!');
+        return redirect()->route('admin.menu.index')->with('success', 'menu telah dihapus!');
     }
 }

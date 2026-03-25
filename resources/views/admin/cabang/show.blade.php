@@ -8,7 +8,7 @@
             <h1 class="text-2xl font-bold text-gray-800">Detail Cabang</h1>
             <p class="text-sm text-gray-500">Informasi lengkap ID: #{{ $cabang->id_cabang }}</p>
         </div>
-        <a href="{{ route('cabang.index') }}" class="px-4 py-2 bg-white border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 transition shadow-sm">
+        <a href="{{ route('admin.cabang.index') }}" class="px-4 py-2 bg-white border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 transition shadow-sm">
              Kembali ke Daftar
         </a>
     </div>
@@ -63,7 +63,7 @@
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                 <h3 class="font-bold text-gray-800 mb-4">Opsi Kelola</h3>
                 <div class="grid gap-3">
-                    <a href="{{ route('cabang.edit', $cabang->id_cabang) }}" class="w-full py-3 bg-blue-600 text-white rounded-xl font-semibold text-center hover:bg-blue-700 transition shadow-lg shadow-blue-100">
+                    <a href="{{ route('admin.cabang.edit', $cabang->id_cabang) }}" class="w-full py-3 bg-blue-600 text-white rounded-xl font-semibold text-center hover:bg-blue-700 transition shadow-lg shadow-blue-100">
                         Edit Informasi
                     </a>
                     <button onclick="window.print()" class="w-full py-3 bg-gray-50 text-gray-600 rounded-xl font-semibold border border-gray-100 hover:bg-gray-100 transition text-center">

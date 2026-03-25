@@ -2,62 +2,96 @@
 
 @section('content')
 
-{{-- Overlay --}}
-<div class="fixed inset-0 z-[9999] flex items-center justify-center">
-{{-- <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"> --}}
+<x-modal-form
+    title="Add New User"
+    action="{{ route('admin.user.store') }}"
+    method="POST"
+    cancelUrl="{{ route('admin.user.index') }}"
+>
+    {{-- HAPUS @method('PUT') karena ini form CREATE --}}
 
-    {{-- Card --}}
-    <div class="bg-white w-[380px] rounded-xl shadow-lg p-6 relative">
-
-        <h2 class="text-lg font-semibold mb-4 px-6 py-4 border-b-2 border-green-500 text-center">Add New User</h2>
-
-<<form action="{{ route('user.store') }}" method="POST" class="space-y-4">
-    @csrf
-
-    {{-- Nama --}}
+    {{-- Nama Lengkap --}}
     <div>
-        <label class="text-sm font-medium">Name</label>
-        <input type="text" name="name" required class="w-full mt-1 px-3 py-2 border rounded-md">
+        <label class="text-sm font-medium">Nama Lengkap</label>
+        <input type="text"
+               name="name"
+               value="{{ old('name') }}"
+               placeholder="Nama karyawan"
+               required
+               class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-100 focus:border-green-400 outline-none transition-all">
+
+        @error('name')
+            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+        @enderror
     </div>
 
-    {{-- Username (TAMBAHKAN INI) --}}
-    <div>
-        <label class="text-sm font-medium">Username</label>
-        <input type="text" name="username" required class="w-full mt-1 px-3 py-2 border rounded-md">
+    <div class="grid grid-cols-2 gap-4">
+        {{-- Username --}}
+        <div>
+            <label class="text-sm font-medium">Username</label>
+            <input type="text"
+                   name="username"
+                   value="{{ old('username') }}"
+                   placeholder="username"
+                   required
+                   class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-100 focus:border-green-400 outline-none transition-all">
+
+            @error('username')
+                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+            @enderror
+        </div>
+
+        {{-- Password --}}
+        <div>
+            <label class="text-sm font-medium">Password</label>
+            <input type="password" 
+                   name="password" 
+                   placeholder="******"
+                   required {{-- WAJIB diisi saat buat user baru --}}
+                   class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-100 focus:border-green-400 outline-none transition-all">
+
+            @error('password')
+                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+            @enderror
+        </div>
     </div>
 
-    {{-- Password --}}
-    <div>
-        <label class="text-sm font-medium">Password</label>
-        <input type="password" name="password" required class="w-full mt-1 px-3 py-2 border rounded-md">
+    <div class="grid grid-cols-2 gap-4">
+        {{-- Role --}}
+        <div>
+            <label class="text-sm font-medium">Role</label>
+            <select name="role" required class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-100 focus:border-green-400 outline-none transition-all">
+
+                <option value="kasir" {{ old('role') == 'kasir' ? 'selected' : '' }}>Kasir</option>
+                <option value="admin" {{ old('role') == 'admin' ? 'selected' : '' }}>Admin</option>
+            </select>
+        </div>
+
+        {{-- Status --}}
+        <div>
+            <label class="text-sm font-medium">Status Akun</label>
+            <select name="is_active" required class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-100 focus:border-green-400 outline-none transition-all">
+
+                <option value="1" {{ old('is_active', '1') == '1' ? 'selected' : '' }}>Aktif</option>
+                <option value="0" {{ old('is_active') == '0' ? 'selected' : '' }}>Non-Aktif</option>
+            </select>
+        </div>
     </div>
 
-    {{-- Role --}}
+    {{-- Penempatan Cabang --}}
     <div>
-        <label class="text-sm font-medium">Role</label>
-        <select name="role" required class="w-full mt-1 px-3 py-2 border rounded-md">
-            <option value="admin">Admin</option>
-            <option value="kasir">Kasir</option>
+        <label class="text-sm font-medium">Penempatan Cabang</label>
+        <select name="id_cabang"  class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-100 focus:border-green-400 outline-none transition-all">
+            <option value="">-- Pilih Cabang (Pusat) --</option>
+            @foreach($cabangs as $cabang)
+                <option value="{{ $cabang->id_cabang }}" {{ old('id_cabang') == $cabang->id_cabang ? 'selected' : '' }}>
+                    {{ $cabang->nama_cabang }}
+                </option>
+            @endforeach
         </select>
+        <p class="text-[10px] text-gray-400 mt-1 italic leading-tight">*Pilih cabang tempat kasir bertugas.</p>
     </div>
 
-   {{-- Status --}}
-<div class="mb-4">
-    <label class="text-sm font-medium text-gray-700">Status</label>
-    <select name="is_active" class="w-full mt-1 px-3 py-2 border rounded-md" required>
-        <option value="1">Aktif</option>
-        <option value="0">Non-Aktif</option>
-    </select>
-</div>
-
-    {{-- Button --}}
-    <div class="flex justify-end gap-2 pt-4">
-        <a href="{{ route('user.index') }}" class="bg-red-500 text-white px-4 py-2 rounded-md">Batal</a>
-        <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md">Simpan</button>
-    </div>
-</form>
-
-    </div>
-</div>
+</x-modal-form>
 
 @endsection

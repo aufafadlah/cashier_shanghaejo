@@ -21,7 +21,7 @@ class ProfileController extends Controller
         $user = User::first(); // Sesuaikan nanti dengan Auth::user()
         
         $user->update([
-            'name'     => $request->nama, // Sesuai <input name="nama"> di Blade kamu
+            'name'     => $request->name, // Sesuai <input name="nama"> di Blade kamu
             'username' => $request->username,
         ]);
 

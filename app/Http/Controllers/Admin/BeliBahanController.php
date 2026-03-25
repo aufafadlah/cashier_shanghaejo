@@ -45,19 +45,59 @@ class BeliBahanController extends Controller
             'supplier' => $request->supplier,
         ]);
 
-        return redirect()->route('pembelian.index')->with('success', 'Pengeluaran berhasil ditambah');
+        return redirect()->route('admin.pembelian.index')->with('success', 'Pengeluaran berhasil ditambah');
     }
 
     public function destroy($id)
-{
-    // Cari data berdasarkan primary key id_pengeluaran
-    $data = BeliBahan::findOrFail($id);
+    {
+        // Cari data berdasarkan primary key id_pengeluaran
+        $data = BeliBahan::findOrFail($id);
+    
+        // Hapus data
+        $data->delete();
+    
+        // Kembali ke halaman index dengan pesan sukses
+        return redirect()->route('admin.pembelian.index')->with('success', 'Data pengeluaran berhasil dihapus!');
+    }
+    // --- TAMBAHKAN KODE INI DI BAWAH FUNGSI DESTROY ---
 
-    // Hapus data
-    $data->delete();
+    public function edit($id)
+    {
+        // Ambil data pengeluaran yang mau diedit
+        $pengeluaran = BeliBahan::findOrFail($id);
+        
+        // Ambil daftar cabang untuk dropdown
+        $cabang = Cabang::all(); 
+        
+        return view('admin.pembelian.edit', compact('pengeluaran', 'cabang'));
+    }
 
-    // Kembali ke halaman index dengan pesan sukses
-    return redirect()->route('pembelian.index')->with('success', 'Data pengeluaran berhasil dihapus!');
-}
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'id_cabang' => 'required',
+            'nama_barang' => 'required',
+            'qty' => 'required|numeric',
+            'harga_satuan' => 'required|numeric',
+            'tgl' => 'required|date',
+            'supplier' => 'required'
+        ]);
+
+        $data = BeliBahan::findOrFail($id);
+
+        $data->update([
+            'id_cabang' => $request->id_cabang, 
+            'nama_barang' => $request->nama_barang,
+            'qty' => $request->qty,
+            'harga_satuan' => $request->harga_satuan,
+            // Hitung ulang harga_total kalau-kalau qty/harga berubah
+            'harga_total' => $request->qty * $request->harga_satuan,
+            'tgl' => $request->tgl,
+            'keterangan' => $request->keterangan,
+            'supplier' => $request->supplier,
+        ]);
+
+        return redirect()->route('admin.pembelian.index')->with('success', 'Data pengeluaran berhasil diperbarui!');
+    }
 
 }

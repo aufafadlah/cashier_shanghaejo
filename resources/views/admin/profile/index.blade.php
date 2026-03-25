@@ -8,13 +8,13 @@
     <div class="bg-white w-full max-w-5xl rounded-[3rem] p-12 shadow-[0_35px_60px_-15px_rgba(0,0,0,0.1)] flex justify-between items-center border border-gray-50">
         
         {{-- FORM SECTION (KIRI) --}}
-        <form action="{{ route('profile.update') }}" method="POST" class="w-1/2 space-y-6">
+        <form action="{{ route('admin.profile.update') }}" method="POST" class="w-1/2 space-y-6">
             @csrf
             @method('PUT')
             
             <div>
                 <label class="block text-sm font-semibold text-gray-600 mb-2">Nama</label>
-                <input type="text" name="nama" value="{{ $user->name }}" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-400 outline-none transition-all">
+                <input type="text" name="name" value="{{ $user->name }}" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-400 outline-none transition-all">
             </div>
 
             <div>
@@ -53,7 +53,7 @@
 <div id="passwordModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-center items-center">
     <div class="bg-white w-[400px] rounded-[2rem] p-8 shadow-2xl">
         <h2 class="text-2xl font-bold mb-6">Password Baru</h2>
-        <form action="{{ route('profile.password') }}" method="POST" class="space-y-5">
+        <form action="{{ route('admin.profile.password') }}" method="POST" class="space-y-5">
             @csrf @method('PUT')
             <div>
                 <label class="block text-sm font-medium text-gray-600 mb-1">Password Baru</label>
