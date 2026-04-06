@@ -1,5 +1,5 @@
 @extends('layouts.app')
-
+@section('title', 'Profile')
 @section('content')
 <div class="container-fluid p-10 bg-[#F8FAFC] min-h-screen flex flex-col items-center">
     <h1 class="text-3xl font-bold text-gray-800 self-start mb-8">Profile</h1>

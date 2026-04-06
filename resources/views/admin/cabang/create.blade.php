@@ -16,7 +16,7 @@
                name="nama_cabang"
                value="{{ old('nama_cabang') }}"
                placeholder="Masukan nama cabang"
-               class="w-full mt-1 px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-200">
+               class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-100 focus:border-green-400 outline-none transition-all">
 
         @error('nama_cabang')
             <p class="text-red-500 text-xs mt-1">{{ $message }}</p>

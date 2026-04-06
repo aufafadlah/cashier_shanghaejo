@@ -1,4 +1,5 @@
 @extends('layouts.app')
+@section('title', 'Kelola Cabang')
 
 @section('content')
 <div class="container-fluid p-4" x-data="{}"> 
@@ -146,3 +147,4 @@
     }
 </script>
 @endpush
+@endsection
