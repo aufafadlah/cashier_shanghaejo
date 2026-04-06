@@ -28,7 +28,7 @@ class LoginController extends Controller
             if (Auth::user()->role == 'admin') {
                 return redirect()->route('admin.dashboard');
             }
-            return redirect()->route('kasir.dashboard');
+            return redirect()->route('kasir.pesan.index');
         }
 
         return back()->with('error', 'Username/Password salah atau akun tidak aktif.');

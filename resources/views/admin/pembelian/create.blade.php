@@ -68,7 +68,7 @@
             <label class="block text-sm font-medium text-gray-700 mb-1">Keterangan</label>
             <textarea name="keterangan" rows="2" placeholder="Catatan tambahan (opsional)" 
             class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-100 focus:border-green-400 outline-none transition-all">
-
+            </textarea>
 
         </div>
     </div>

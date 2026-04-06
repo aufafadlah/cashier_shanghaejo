@@ -9,26 +9,29 @@ use App\Http\Controllers\Admin\BeliBahanController;
 use App\Http\Controllers\Admin\ToppingController; //punya frd
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\LoginController;
+use App\Http\Controllers\Kasir\PesanKasirController;
 
-// Route Login
+
+
+// Grouping Route yang perlu Login
+// --- PINDAHKAN KE SINI (DI LUAR AUTH UNTUK TESTING) ---
+Route::controller(PesanKasirController::class)->group(function () {
+    Route::get('/kasir/pesan', 'index')->name('kasir.pesan.index');
+    Route::post('/kasir/pesan/add', 'addToCart')->name('kasir.pesan.add');
+    Route::post('/kasir/pesan/checkout', 'checkout')->name('kasir.pesan.checkout');
+    Route::get('/kasir/pesan/remove/{index}', 'removeCart')->name('kasir.pesan.remove');
+   Route::get('/kasir/pesan/update-qty/{index}/{action}', 'updateQty')->name('kasir.pesan.update-qty');
+    // TAMBAHKAN BARIS INI:
+    Route::get('/kasir/pesan/clear', 'clearCart')->name('kasir.pesan.clear');
+});
+// Route Login & Auth tetap di bawahnya
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
 
-// Grouping Route yang perlu Login
 Route::middleware(['auth'])->group(function () {
-    
-    // DASHBOARD ADMIN
-    // Sesuai gambar, file kamu ada di admin/dashboard.blade.php
     Route::get('/admin/dashboard', function () {
         return view('admin.dashboard'); 
     })->name('admin.dashboard');
-
-    // POS KASIR
-    // Sesuai gambar, file kamu ada di kasir/pos.blade.php
-    Route::get('/kasir/pos', function () {
-        return view('kasir.pos');
-    })->name('kasir.pos');
-
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 });
 
