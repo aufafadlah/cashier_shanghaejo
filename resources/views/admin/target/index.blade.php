@@ -1,5 +1,5 @@
 @extends('layouts.app')
-
+@section('title', 'Kelola Target')
 @section('content')
 <div class="max-w-6xl mx-auto p-6">
     <div class="bg-white rounded-xl shadow p-6">

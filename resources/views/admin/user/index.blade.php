@@ -1,5 +1,5 @@
 @extends('layouts.app')
-
+@section('title', 'Kelola Users')
 @section('content')
 <div class="container-fluid p-4" x-data="{}"> 
     {{-- 1. HEADER --}}

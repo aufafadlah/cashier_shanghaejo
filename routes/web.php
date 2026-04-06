@@ -19,7 +19,7 @@ Route::middleware(['auth'])->group(function () {
     
     // DASHBOARD ADMIN
     // Sesuai gambar, file kamu ada di admin/dashboard.blade.php
-    Route::get('/admin/dashboard', function () {
+    Route::get('/admin/dashboard/index', function () {
         return view('admin.dashboard'); 
     })->name('admin.dashboard');
 
