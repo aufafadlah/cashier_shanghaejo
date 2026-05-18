@@ -4,33 +4,29 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB; 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
-   public function index()
-{
-    $users = DB::table('tb_user')
-        ->leftJoin('tb_cabang', 'tb_user.id_cabang', '=', 'tb_cabang.id_cabang')
-        ->select('tb_user.*', 'tb_cabang.nama_cabang')
-        ->get();
+    public function index()
+    {
+        $users = DB::table('tb_user')
+            ->leftJoin('tb_cabang', 'tb_user.id_cabang', '=', 'tb_cabang.id_cabang')
+            ->select('tb_user.*', 'tb_cabang.nama_cabang')
+            ->get();
 
-    $totalUsers = $users->count();
-    $aktif = $users->where('is_active', 1)->count();
-    $nonAktif = $users->where('is_active', 0)->count();
+        $totalUsers = $users->count();
+        $aktif      = $users->where('is_active', 1)->count();
+        $nonAktif   = $users->where('is_active', 0)->count();
 
-    return view('admin.user.index', compact('users', 'totalUsers', 'aktif', 'nonAktif'));
-}
+        return view('admin.user.index', compact('users', 'totalUsers', 'aktif', 'nonAktif'));
+    }
 
-    /**
-     * Tampilkan Form Tambah User
-     */
     public function create()
     {
-        // AMBIL DATA CABANG AGAR TIDAK ERROR "Undefined variable $cabangs"
-        $cabangs = DB::table('tb_cabang')->get(); 
-
+        $cabangs = DB::table('tb_cabang')->get();
         return view('admin.user.create', compact('cabangs'));
     }
 
@@ -38,52 +34,47 @@ class UserController extends Controller
     {
         $request->validate([
             'id_cabang' => 'required',
-            'name'      => 'required',
+            'name'      => 'required|string|max:100',
             'username'  => 'required|unique:tb_user,username',
             'password'  => 'required|min:6',
-            'role'      => 'required',
+            'role'      => 'required|in:admin,kasir',
             'is_active' => 'required|in:0,1',
         ]);
 
         DB::table('tb_user')->insert([
-            'id_cabang'   => $request->id_cabang, // Gunakan input dari form, bukan hardcode 1
-            'name'        => $request->name,
-            'username'    => $request->username,
-            'password'    => Hash::make($request->password),
-            'role'        => $request->role,
-            'is_active'   => $request->is_active ?? 1, 
-            'created_at'  => now(),
-            'updated_at'  => now(),
+            'id_cabang'  => $request->id_cabang,
+            'name'       => $request->name,
+            'username'   => $request->username,
+            'password'   => Hash::make($request->password),
+            'role'       => $request->role,
+            'is_active'  => (int) $request->is_active,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         return redirect()->route('admin.user.index')->with('success', 'User berhasil ditambahkan!');
     }
 
-    /**
-     * Tampilkan Form Edit User
-     */
     public function edit($id)
     {
         $user = DB::table('tb_user')->where('id_user', $id)->first();
-        
-        // AMBIL DATA CABANG JUGA DI SINI UNTUK DROPDOWN EDIT
-        $cabangs = DB::table('tb_cabang')->get(); 
 
         if (!$user) {
-            return redirect()->route('admin.user.index')->with('error', 'User tidak ditemukan');
+            return redirect()->route('admin.user.index')->with('error', 'User tidak ditemukan!');
         }
 
+        $cabangs = DB::table('tb_cabang')->get();
         return view('admin.user.edit', compact('user', 'cabangs'));
     }
 
     public function update(Request $request, $id)
     {
         $request->validate([
-            'id_cabang'=> 'required',
-            'name'     => 'required',
-            'username' => 'required|unique:tb_user,username,'.$id.',id_user',
-            'role'     => 'required',
-            'is_active' => 'required',
+            'id_cabang' => 'required',
+            'name'      => 'required|string|max:100',
+            'username'  => 'required|unique:tb_user,username,' . $id . ',id_user',
+            'role'      => 'required|in:admin,kasir',
+            'is_active' => 'required|in:0,1',
         ]);
 
         $data = [
@@ -91,7 +82,7 @@ class UserController extends Controller
             'name'       => $request->name,
             'username'   => $request->username,
             'role'       => $request->role,
-            'is_active'  => $request->is_active,
+            'is_active'  => (int) $request->is_active,
             'updated_at' => now(),
         ];
 
@@ -106,6 +97,19 @@ class UserController extends Controller
 
     public function destroy($id)
     {
+        // ✅ tidak bisa hapus akun sendiri
+        if ($id == Auth::user()->id_user) {
+            return redirect()->route('admin.user.index')
+                ->with('error', 'Tidak bisa menghapus akun sendiri!');
+        }
+
+        // ✅ tidak bisa hapus user yang masih punya transaksi
+        $adaTransaksi = DB::table('tb_penjualan')->where('id_user', $id)->exists();
+        if ($adaTransaksi) {
+            return redirect()->route('admin.user.index')
+                ->with('error', 'User tidak bisa dihapus karena masih memiliki data transaksi!');
+        }
+
         DB::table('tb_user')->where('id_user', $id)->delete();
         return redirect()->route('admin.user.index')->with('success', 'User telah dihapus!');
     }

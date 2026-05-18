@@ -14,7 +14,11 @@ class Target extends Model
         'id_menu',
         'tanggal',
         'stok_target',
-        'over_target'
+        'over_target',
+
+
+
+        
     ];
 
     public $timestamps = true;

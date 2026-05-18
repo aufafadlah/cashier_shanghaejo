@@ -47,7 +47,6 @@ class PesanKasirController extends Controller
 
         $cart = session()->get('cart', []);
         
-        // Simpan ke session dengan perhitungan subtotal
         $cart[] = [
             'id_menu' => $menu->id_menu,
             'nama_menu' => $menu->nama_menu,
@@ -63,29 +62,36 @@ class PesanKasirController extends Controller
 
     public function checkout(Request $request)
     {
+        $request->validate([
+            'nama_pelanggan' => 'required|min:3',
+            'jenis_pembayaran' => 'required'
+        ]);
+
         $cart = session()->get('cart', []);
-        if (empty($cart)) return back()->with('error', 'Keranjang masih kosong!');
+        if (empty($cart)) return response()->json(['success' => false, 'message' => 'Keranjang kosong!'], 400);
 
         try {
-            DB::transaction(function () use ($request, $cart) {
-                // 1. Simpan ke tb_penjualan (Header)
+            $id = DB::transaction(function () use ($request, $cart) {
+                $totalAwal = array_sum(array_column($cart, 'subtotal'));
+                $uangTunai = $request->uang_tunai ?? $totalAwal;
+
+                // 1. Simpan Header Penjualan
                 $penjualanId = DB::table('tb_penjualan')->insertGetId([
-                    'id_cabang'         => Auth::user()->id_cabang ?? 1, // Mengambil id_cabang dari user login
+                    'id_cabang'         => Auth::user()->id_cabang ?? 1,
                     'id_user'           => Auth::id() ?? 1,
                     'nama_pelanggan'    => $request->nama_pelanggan,
-                    'total_awal'        => $request->total_awal, // Total sebelum diskon
-                    'diskon'            => $request->diskon ?? 0,
-                    'total_bayar'       => $request->total_bayar,
-                    'metode_pembayaran' => $request->metode_pembayaran, // 'cash' atau 'qris'
-                    'uang_tunai'        => $request->uang_tunai ?? 0,
-                    'kembalian'         => $request->kembalian ?? 0,
+                    'total_awal'        => $totalAwal,
+                    'total_bayar'       => $totalAwal,
+                    'metode_pembayaran' => strtolower($request->jenis_pembayaran),
+                    'uang_tunai'        => $uangTunai,
+                    'kembalian'         => $uangTunai - $totalAwal,
                     'status_transaksi'  => 'berhasil',
                     'created_at'        => now(),
                     'updated_at'        => now(),
                 ]);
 
+                // 2. Simpan Detail Menu
                 foreach ($cart as $item) {
-                    // 2. Simpan ke tb_detail_penjualan
                     $detailId = DB::table('tb_detail_penjualan')->insertGetId([
                         'id_penjualan'   => $penjualanId,
                         'id_menu'        => $item['id_menu'],
@@ -94,7 +100,7 @@ class PesanKasirController extends Controller
                         'subtotal'       => $item['subtotal']
                     ]);
 
-                    // 3. Simpan ke tb_detail_penjualan_toping (Snapshot Topping)
+                    // 3. Simpan Topping
                     if (!empty($item['toppings'])) {
                         foreach ($item['toppings'] as $top) {
                             DB::table('tb_detail_penjualan_toping')->insert([
@@ -106,36 +112,55 @@ class PesanKasirController extends Controller
                         }
                     }
                 }
+
+                return $penjualanId;
             });
 
             session()->forget('cart');
-            return redirect()->route('kasir.pesan.index')->with('success', 'Transaksi Berhasil Disimpan!');
+
+            return response()->json([
+                'success' => true, 
+                'id_penjualan' => $id
+            ]);
 
         } catch (\Exception $e) {
-            return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
-public function updateQty($index, $action)
-{
-    $cart = session()->get('cart', []);
 
-    if (isset($cart[$index])) {
-        if ($action === 'plus') {
-            $cart[$index]['qty']++;
-        } elseif ($action === 'minus') {
-            $cart[$index]['qty']--;
-            
-            // Kalau qty jadi 0, hapus saja dari keranjang
-            if ($cart[$index]['qty'] <= 0) {
-                unset($cart[$index]);
-            }
+    public function printStruk($id)
+    {
+        $penjualan = DB::table('tb_penjualan')
+            ->leftJoin('tb_user', 'tb_penjualan.id_user', '=', 'tb_user.id_user')
+            ->leftJoin('tb_cabang', 'tb_penjualan.id_cabang', '=', 'tb_cabang.id_cabang')
+            ->where('tb_penjualan.id_penjualan', $id)
+            ->select(
+                'tb_penjualan.*', 
+                'tb_user.name as nama_kasir', 
+                'tb_cabang.nama_cabang', 
+                'tb_cabang.alamat as alamat_cabang'
+            )
+            ->first();
+
+        if (!$penjualan) {
+            return "Gagal: ID $id tidak ditemukan.";
         }
-        
-        session()->put('cart', $cart);
+
+        $details = DB::table('tb_detail_penjualan')
+            ->join('tb_menu', 'tb_detail_penjualan.id_menu', '=', 'tb_menu.id_menu')
+            ->where('id_penjualan', $id)
+            ->select('tb_detail_penjualan.*', 'tb_menu.nama_menu')
+            ->get();
+
+        foreach ($details as $detail) {
+            $detail->toppings = DB::table('tb_detail_penjualan_toping')
+                ->where('id_detail_penjualan', $detail->id_detail_penjualan)
+                ->get();
+        }
+
+        return view('kasir.pesan.struk', compact('penjualan', 'details')); 
     }
 
-    return redirect()->back();
-}
     public function removeCart($index)
     {
         $cart = session()->get('cart', []);
@@ -145,10 +170,38 @@ public function updateQty($index, $action)
         }
         return back();
     }
+    public function updateQty($index, $action)
+{
+    $cart = session()->get('cart', []);
 
-    public function clearCart()
-    {
-        session()->forget('cart');
-        return back();
+    if (isset($cart[$index])) {
+        // 1. Update Quantity
+        if ($action === 'plus') {
+            $cart[$index]['qty']++;
+        } elseif ($action === 'minus') {
+            $cart[$index]['qty']--;
+        }
+
+        // 2. Jika Qty menjadi 0 atau kurang, hapus item dari keranjang
+        if ($cart[$index]['qty'] < 1) {
+            unset($cart[$index]);
+            session()->put('cart', array_values($cart));
+            return redirect()->back()->with('success', 'Menu dihapus dari keranjang');
+        }
+
+        // 3. Hitung Ulang Subtotal untuk item ini
+        // Kita hitung ulang karena subtotal = (Harga Menu + Total Harga Topping) * Qty
+        $toppingTotalHarga = 0;
+        foreach ($cart[$index]['toppings'] as $top) {
+            $toppingTotalHarga += $top['harga_snapshot'];
+        }
+
+        $cart[$index]['subtotal'] = ($cart[$index]['harga_menu'] + $toppingTotalHarga) * $cart[$index]['qty'];
+
+        // 4. Simpan kembali ke session
+        session()->put('cart', $cart);
     }
+
+    return redirect()->back();
+}
 }

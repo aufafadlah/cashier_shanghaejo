@@ -6,38 +6,56 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 
 class ProfileController extends Controller
 {
     public function index()
     {
-        $user = User::first(); // Sementara pakai first() agar tidak null
+        $user = Auth::user();
+
+        if ($user->role === 'kasir') {
+            return view('kasir.profile.index', compact('user'));
+        }
+
         return view('admin.profile.index', compact('user'));
     }
 
-    // FUNGSI UNTUK SIMPAN NAMA & USERNAME
     public function update(Request $request)
     {
-        $user = User::first(); // Sesuaikan nanti dengan Auth::user()
-        
+        $user = Auth::user();
+
+        // ✅ validasi nama dan username
+        $request->validate([
+            'name'     => 'required|string|max:100',
+            'username' => 'required|string|max:100|unique:tb_user,username,' . $user->id_user . ',id_user',
+        ]);
+
         $user->update([
-            'name'     => $request->name, // Sesuai <input name="nama"> di Blade kamu
+            'name'     => $request->name,
             'username' => $request->username,
         ]);
 
         return back()->with('success', 'Profil berhasil diperbarui!');
     }
 
-    // FUNGSI UNTUK SIMPAN PASSWORD BARU DARI MODAL
     public function updatePassword(Request $request)
     {
+        // ✅ validasi password lama sebelum ganti
         $request->validate([
-            'password' => 'required|min:8|confirmed', // 'confirmed' otomatis cek password_confirmation
+            'current_password' => 'required',
+            'password'         => 'required|min:8|confirmed',
         ]);
 
-        $user = User::first(); 
+        $user = Auth::user();
+
+        // ✅ cek password lama cocok atau tidak
+        if (!Hash::check($request->current_password, $user->password)) {
+            return back()->with('error', 'Password lama tidak cocok!');
+        }
+
         $user->update([
-            'password' => Hash::make($request->password)
+            'password' => Hash::make($request->password),
         ]);
 
         return back()->with('success', 'Password berhasil diganti!');

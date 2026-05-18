@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 @section('title', 'Kelola Pembelian')
 @section('content')
 <div class="container-fluid p-4" x-data="{}"> 
