@@ -1,11 +1,40 @@
 @extends('layouts.kasir')
 @section('content')
-<div x-data="{ 
+<div x-data='{ 
     openDetail: false, 
-    searchQuery: '',
+    searchQuery: "",
     qty: 1, 
-    activeMenu: {id: '', nama: '', harga: 0} 
-}" class="h-screen bg-[#f1f5f9] p-3 font-sans overflow-hidden" x-cloak>
+    activeMenu: {id: "", nama: "", harga: 0},
+    selectedToppings: [],
+    toppingsList: @json($toppings),
+    
+    getToppingLabel(topId) {
+        let top = this.toppingsList.find(t => t.id_toping == topId);
+        if (!top) return "";
+        
+        let isSelected = this.selectedToppings.some(val => val == topId);
+        if (isSelected) {
+            let selectedInOrder = this.toppingsList.filter(t => this.selectedToppings.some(val => val == t.id_toping));
+            let index = selectedInOrder.findIndex(t => t.id_toping == topId);
+            if (index < 2) {
+                return "Gratis";
+            }
+        }
+        return "Rp " + parseInt(top.harga_toping).toLocaleString("id-ID");
+    },
+    
+    calculateTotal() {
+        let base = parseFloat(this.activeMenu.harga) || 0;
+        let selectedInOrder = this.toppingsList.filter(t => this.selectedToppings.some(val => val == t.id_toping));
+        let toppingsTotal = 0;
+        selectedInOrder.forEach((t, index) => {
+            if (index >= 2) {
+                toppingsTotal += parseFloat(t.harga_toping) || 0;
+            }
+        });
+        return (base + toppingsTotal) * this.qty;
+    }
+}' class="h-screen bg-[#f1f5f9] p-3 font-sans overflow-hidden" x-cloak>
 
     <div class="flex flex-col lg:flex-row gap-4 max-w-[1600px] mx-auto h-[calc(100vh-140px)]">
         <div class="w-full lg:w-7/12 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
@@ -25,7 +54,7 @@
             <div class="flex-1 overflow-y-auto px-5 pb-5 custom-scrollbar space-y-2">
                 @foreach($menus as $menu)
                 <div x-show="'{{ strtolower($menu->nama_menu) }}'.includes(searchQuery.toLowerCase())"
-                     @click="activeMenu = {id: '{{ $menu->id_menu }}', nama: '{{ $menu->nama_menu }}', harga: {{ $menu->harga_menu }} }; openDetail = true; qty = 1;" 
+                     @click="activeMenu = {id: '{{ $menu->id_menu }}', nama: '{{ $menu->nama_menu }}', harga: {{ $menu->harga_menu }} }; openDetail = true; qty = 1; selectedToppings = [];" 
                      class="cursor-pointer group bg-white border border-slate-100 rounded-xl p-3 flex justify-between items-center hover:border-blue-400 hover:shadow-md transition-all">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 bg-slate-50 rounded-lg flex items-center justify-center group-hover:bg-blue-50 transition-colors">
@@ -58,7 +87,7 @@
                                 <p class="text-[9px] text-slate-500 font-medium truncate">
                                     {{ count($item['toppings']) > 0 ? implode(', ', array_column($item['toppings'], 'nama_toping')) : 'ORIGINAL' }}
                                 </p>
-                                <p class="text-blue-600 font-bold text-[11px] mt-0.5">Rp {{ number_format(($item['harga_menu'] ?? 0) * $item['qty']) }}</p>
+                                <p class="text-blue-600 font-bold text-[11px] mt-0.5">Rp {{ number_format($item['subtotal'] ?? 0) }}</p>
                             </div>
                             
                             <div class="flex items-center gap-2 ml-3">
@@ -154,10 +183,10 @@
                             @foreach($toppings as $top)
                             <label class="relative flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50 cursor-pointer has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50 transition-all shadow-sm">
                                 <div class="flex items-center gap-3">
-                                    <input type="checkbox" name="toppings[]" value="{{ $top->id_toping }}" class="w-4 h-4 rounded text-blue-600 border-slate-300">
+                                    <input type="checkbox" name="toppings[]" value="{{ $top->id_toping }}" x-model="selectedToppings" class="w-4 h-4 rounded text-blue-600 border-slate-300">
                                     <span class="text-xs font-bold text-slate-700 uppercase">{{ $top->nama_toping }}</span>
                                 </div>
-                                <span class="text-[10px] font-bold text-green-600">+{{ number_format($top->harga_toping) }}</span>
+                                <span class="text-[10px] font-bold text-green-600" x-text="getToppingLabel({{ $top->id_toping }})"></span>
                             </label>
                             @endforeach
                         </div>
@@ -170,9 +199,8 @@
                             <input type="hidden" name="qty" :value="qty">
                             <button type="button" @click="qty++" class="w-8 h-8 text-slate-600 font-bold hover:bg-white rounded-lg transition-all">+</button>
                         </div>
-                        <button type="submit" class="flex-[2] bg-blue-600 text-white font-bold py-3 rounded-xl flex justify-between px-5 items-center hover:bg-blue-700 transition-all shadow-lg">
-                            <span class="text-[10px] uppercase">Tambah</span>
-                            <span class="text-sm" x-text="'Rp ' + (activeMenu.harga * qty).toLocaleString('id-ID')"></span>
+                        <button type="submit" class="flex-[2] bg-blue-600 text-white font-bold py-3 rounded-xl flex justify-center items-center hover:bg-blue-700 transition-all shadow-lg text-xs uppercase tracking-wider">
+                            TAMBAH - <span class="ml-1" x-text="'Rp ' + calculateTotal().toLocaleString('id-ID')"></span>
                         </button>
                     </div>
                 </form>

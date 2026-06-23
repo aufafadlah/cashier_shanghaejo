@@ -14,29 +14,37 @@
         </div>
 
         {{-- 2. FILTER CABANG (TAMBAHAN BARU DI SINI) --}}
-        <div class="flex items-center">
-            @if(auth()->user()->role === 'admin')
-                {{-- Form filter otomatis submit jika admin mengganti pilihan cabang --}}
-                <form action="{{ url('/admin/dashboard') }}" method="GET" id="filterFormNavbar">
-                    <select name="id_cabang" onchange="document.getElementById('filterFormNavbar').submit()" 
-                            class="bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer">
-                        
-                        <option value="">Semua Cabang (Gabungan)</option>
-                        
-                        @foreach($daftarCabang ?? [] as $cabang)
-                            <option value="{{ $cabang->id_cabang }}" {{ ($selectedCabang ?? '') == $cabang->id_cabang ? 'selected' : '' }}>
-                                {{ $cabang->nama_cabang }}
-                            </option>
-                        @endforeach
-                    </select>
-                </form>
-            @else
-                {{-- Jika login sebagai user/kasir biasa, tampilkan nama cabang penugasannya saja --}}
-                <div class="bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100 text-xs font-bold text-gray-500">
-                    Cabang: {{ auth()->user()->cabang->nama_cabang ?? 'Cabang Aktif' }}
-                </div>
-            @endif
+{{-- 2. FILTER CABANG --}}
+
+<div class="flex items-center">
+    @if(auth()->user()->role === 'admin')
+        {{-- Cek apakah halaman saat ini adalah halaman Cabang atau Topping --}}
+    @php
+    $isDisabled = request()->routeIs('admin.cabang.*') || 
+                  request()->routeIs('admin.toping.*');
+    @endphp
+
+        <form action="{{ url()->current() }}" method="GET" id="filterFormNavbar">
+            <select name="id_cabang" 
+                    onchange="this.form.submit()" 
+                    {{ $isDisabled ? 'disabled' : '' }}
+                    class="bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 focus:outline-none focus:ring-2 focus:ring-teal-500 {{ $isDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer' }}">
+                
+                <option value="">Semua Cabang (Gabungan)</option>
+                
+                @foreach($daftarCabang ?? [] as $cabang)
+                    <option value="{{ $cabang->id_cabang }}" {{ request('id_cabang') == $cabang->id_cabang ? 'selected' : '' }}>
+                        {{ $cabang->nama_cabang }}
+                    </option>
+                @endforeach
+            </select>
+        </form>
+    @else
+        <div class="bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100 text-xs font-bold text-gray-500">
+            Cabang: {{ auth()->user()->cabang->nama_cabang ?? 'Cabang Aktif' }}
         </div>
+    @endif
+</div>
 
         {{-- 3. Dropdown Menu Profil User --}}
         <div x-data="{ open: false }" class="relative ml-2">

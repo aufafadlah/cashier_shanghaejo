@@ -1,80 +1,56 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\CabangController;
-use App\Http\Controllers\Admin\MenuController;
-use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\Admin\TargetController;
-use App\Http\Controllers\Admin\BeliBahanController;
-use App\Http\Controllers\Admin\ToppingController;
-use App\Http\Controllers\Admin\ProfileController;
-use App\Http\Controllers\Admin\LoginController;
+use App\Http\Controllers\Admin\{CabangController, MenuController, UserController, BeliBahanController, ToppingController, ProfileController, LoginController, LaporanController, DashboardController};
 use App\Http\Controllers\Kasir\PesanKasirController;
-use App\Http\Controllers\Admin\LaporanTargetController;
-use App\Http\Controllers\Admin\DashboardController;
 
-
-
-// Grouping Route yang perlu Login
-// --- PINDAHKAN KE SINI (DI LUAR AUTH UNTUK TESTING) ---
-// --- ROUTE KASIR (Pindahkan semua ke sini agar satu grup) ---
-Route::get('/', function () {
-    return redirect()->route('login');
-});
-Route::controller(PesanKasirController::class)->group(function () {
-    Route::get('/kasir/pesan', 'index')->name('kasir.pesan.index');
-    Route::post('/kasir/pesan/add', 'addToCart')->name('kasir.pesan.add');
-    Route::post('/kasir/pesan/checkout', 'checkout')->name('kasir.pesan.checkout');
-    Route::get('/kasir/pesan/remove/{index}', 'removeCart')->name('kasir.pesan.remove');
-    Route::get('/kasir/pesan/update-qty/{index}/{action}', 'updateQty')->name('kasir.pesan.update-qty');
-    Route::get('/kasir/pesan/clear', 'clearCart')->name('kasir.pesan.clear');
-    
-    // Pastikan ini di luar prefix 'admin' dan grup 'Profile'
-    Route::get('/kasir/pesan/print/{id}', 'printStruk')->name('kasir.pesan.print');
-    Route::get('/kasir/riwayat', 'index')->name('kasir.riwayat.index');
-    Route::get('/kasir/profile', [ProfileController::class, 'index'])->name('kasir.profile.index');
-    Route::put('/kasir/profile/update', [ProfileController::class, 'update'])->name('kasir.profile.update');
-    });
-    
-// --- Route Login & Auth ---
+// 1. RUTE PUBLIK (Tanpa Login)
+Route::get('/', fn() => redirect()->route('login'));
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
-Route::middleware(['auth'])->group(function () {
-    Route::get('/admin/dashboard', function () {
-        return view('admin.dashboard'); 
-    })->name('admin.dashboard');
-    Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
-    
 
-    // --- Route Grup Admin ---
-    Route::prefix('admin')->name('admin.')->group(function () {
+// 2. RUTE DENGAN LOGIN (Autentikasi)
+Route::middleware(['auth'])->group(function () {
+    Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+    // --- RUTE KASIR ---
+    Route::prefix('kasir')->name('kasir.')->group(function () {
+        Route::controller(PesanKasirController::class)->group(function () {
+            Route::get('/pesan', 'index')->name('pesan.index');
+            Route::post('/pesan/add', 'addToCart')->name('pesan.add');
+            Route::post('/pesan/checkout', 'checkout')->name('pesan.checkout');
+            Route::get('/pesan/remove/{index}', 'removeCart')->name('pesan.remove');
+            Route::get('/pesan/update-qty/{index}/{action}', 'updateQty')->name('pesan.update-qty');
+            Route::get('/pesan/clear', 'clearCart')->name('pesan.clear');
+            Route::get('/pesan/print/{id}', 'printStruk')->name('pesan.print');
+            Route::get('/riwayat', 'riwayat')->name('riwayat.index');
+            Route::delete('/riwayat/{id}', 'deleteOrder')->name('riwayat.delete');
+        });
+        // Profile Kasir
+        Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
+        Route::put('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
+    });
+
+    // --- RUTE ADMIN (Gunakan middleware 'role:admin' di sini) ---
+    Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
         Route::resource('cabang', CabangController::class);
         Route::resource('menu', MenuController::class);
         Route::resource('user', UserController::class)->parameters(['user' => 'id']);
         Route::resource('toping', ToppingController::class);
         Route::resource('pembelian', BeliBahanController::class);
-        Route::get('/target', [TargetController::class, 'index'])->name('target.index');
-        Route::post('/target/store', [TargetController::class, 'store'])->name('target.store');
-        Route::get('/laporantarget', [LaporanTargetController::class, 'index'])->name('laporantarget.index');
 
-        // Route Profile (Hanya untuk urusan Profil)
+        // Laporan
+        Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
+        Route::get('/laporanpembelian', [BeliBahanController::class, 'laporan'])->name('laporanpembelian.index');
+
+
+        // Profile Admin
         Route::controller(ProfileController::class)->group(function () {
             Route::get('/profile', 'index')->name('profile.index');
             Route::put('/profile/update', 'update')->name('profile.update');
             Route::put('/profile/password', 'updatePassword')->name('profile.password');
         });
     });
-    //laporan
-    // Tambahkan di dalam file routes/web.php
-Route::get('/admin/laporan/harian', function () {
-    return view('admin.laporan.harian');
-})->name('admin.laporan.harian');
-Route::get('/admin/laporan/bulanan', function () {
-    return view('admin.laporan.bulanan');
-})->name('admin.laporan.bulanan');
-Route::get('/admin/laporan/tahunan', function () {
-    return view('admin.laporan.tahunan');
-})->name('admin.laporan.tahunan');
-
-Route::get('/admin/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 });

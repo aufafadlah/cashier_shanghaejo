@@ -48,15 +48,15 @@
             </td>
             <td class="px-6 py-4 text-center">
                 {{-- Gunakan $event.currentTarget agar koordinat akurat --}}
-                <button 
-                    type="button"
-                    @click="$dispatch('open-menu', { 
-                        id: {{ $cabang->id_cabang }}, 
-                        el: $event.currentTarget 
-                    })"
-                    class="p-2 w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors font-bold">
-                    ⋮
-                </button>
+<button 
+    type="button"
+    @click="$dispatch('open-menu', { 
+        id: {{ $cabang->id_cabang }}, 
+        el: $event.currentTarget 
+    })"
+    class="p-2 w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors font-bold">
+    ⋮
+</button>
             </td>
         </tr>
         @empty
@@ -65,28 +65,26 @@
     </x-table>
 </div> {{-- Tutup container-fluid --}}
 
-{{-- DROPDOWN MENU --}}
+{{-- DROPDOWN MENU - Ubah class-nya --}}
 <div 
     x-data="dropdownMenu()"
     @open-menu.window="openMenu($event.detail)"
     @click.away="open = false"
     x-show="open"
     x-cloak
-    x-transition:enter="transition ease-out duration-150"
-    x-transition:enter-start="opacity-0 scale-95"
-    x-transition:enter-end="opacity-100 scale-100"
     :style="`position: fixed; top: ${top}px; left: ${left}px;`"
-    class="w-44 bg-white border border-gray-100 rounded-2xl shadow-2xl z-[9999] py-2 overflow-hidden"
+    class="w-44 bg-white border border-gray-100 rounded-2xl shadow-2xl z-[99999] py-2 overflow-hidden pointer-events-auto"
 >
-    <a :href="'/admin/cabang/'+id" class="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition">
+    {{-- Tambahkan @click.stop agar klik di dalam menu tidak memicu @click.away --}}
+    <a :href="'/admin/cabang/' + id" class="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition" @click.stop>
         <span class="mr-3 text-lg">👁️</span> Detail Cabang
     </a>
-    <a :href="'/admin/cabang/'+id+'/edit'" class="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition">
+    <a :href="'/admin/cabang/' + id + '/edit'" class="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition" @click.stop>
         <span class="mr-3 text-lg">✏️</span> Edit Data
     </a>
     <div class="border-t border-gray-50 my-1"></div>
     <button
-        @click="$dispatch('open-modal-hapus-'+id); open=false"
+        @click.stop="$dispatch('open-modal-hapus-'+id); open=false"
         class="flex items-center w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition font-semibold">
         <span class="mr-3 text-lg">🗑️</span> Hapus Cabang
     </button>
@@ -120,12 +118,12 @@
             top: 0,
             left: 0,
 
-            openMenu(data){
-                this.id = data.id;
-                this.open = false; // Reset status agar transisi muncul lagi
-                
-                // Beri jeda sedikit agar koordinat tombol dihitung dengan benar
-                this.$nextTick(() => {
+openMenu(data){
+    console.log("Membuka menu untuk ID:", data.id); // <--- TAMBAHKAN INI
+    this.id = data.id;
+    this.open = false; 
+    
+    this.$nextTick(() => {
                     const rect = data.el.getBoundingClientRect();
                     const dropdownHeight = 160; 
                     const windowHeight = window.innerHeight;

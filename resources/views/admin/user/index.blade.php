@@ -47,8 +47,7 @@
                     
                 </td>
                 <td class="px-6 py-4 text-gray-700 font-medium">
-                    {{-- Pastikan di Model User sudah ada relasi 'cabang' --}}
-                    {{ $user->cabang->nama_cabang ?? 'pusat' }}
+{{ $user->cabang ? $user->cabang->nama_cabang : 'Pusat' }}
                 </td>
                 <td class="px-6 py-4 text-center">
                     {{-- Menggunakan komponen badge status jika ada --}}

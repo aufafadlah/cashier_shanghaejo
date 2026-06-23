@@ -1,113 +1,100 @@
 <?php
 
 namespace App\Http\Controllers\Admin;
-
+use App\Models\Cabang;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class CabangController extends Controller
 {
-    public function index()
-    {
-        $cabangs = DB::table('tb_cabang')->get();
+public function index()
+{
+    // Menggunakan Eloquent: Cabang::all() otomatis memanggil semua data
+   $cabangs = Cabang::all();
+  
 
-        $totalCabang = $cabangs->count();
-        $aktif = $cabangs->where('is_active', 1)->count();
-        $nonAktif = $cabangs->where('is_active', 0)->count();
+    // Eloquent collection memiliki method count() dan where() yang sangat powerful
+    $totalCabang = $cabangs->count();
+    $aktif       = $cabangs->where('is_active', true)->count();
+    $nonAktif    = $cabangs->where('is_active', false)->count();
 
-        return view('admin.cabang.index', compact(
-            'cabangs',
-            'totalCabang',
-            'aktif',
-            'nonAktif'
-        ));
-    }
+    return view('admin.cabang.index', compact('cabangs', 'totalCabang', 'aktif', 'nonAktif'));
+}
 
     public function create()
     {
         return view('admin.cabang.create');
     }
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'nama_cabang' => 'required',
-            'alamat'      => 'required',
-            'is_active'   => 'nullable|boolean',
-        ]);
+public function store(Request $request)
+{
+    // 1. Validasi
+    $validated = $request->validate([
+        'nama_cabang' => 'required',
+        'alamat'      => 'required',
+        'is_active'   => 'nullable|boolean',
+    ]);
 
-        DB::table('tb_cabang')->insert([
-            'nama_cabang' => $request->nama_cabang,
-            'alamat'      => $request->alamat,
-            'is_active'   => $request->boolean('is_active'),
-            'created_at'  => now(),
-            'updated_at'  => now(),
-        ]);
+    // 2. Simpan menggunakan Eloquent (Otomatis handle created_at/updated_at)
+    Cabang::create($validated);
 
-        return redirect()
-            ->route('admin.cabang.index')
-            ->with('success', 'Cabang berhasil ditambahkan');
+    return redirect()->route('admin.cabang.index')->with('success', 'Cabang berhasil ditambahkan');
+}
+
+public function edit($id)
+{
+    // Menggunakan Eloquent agar konsisten
+    $cabang = Cabang::findOrFail($id); 
+
+    return view('admin.cabang.edit', compact('cabang'));
+}
+
+public function update(Request $request, $id)
+{
+    $cabang = Cabang::findOrFail($id);
+
+    $validated = $request->validate([
+        'nama_cabang' => 'required|string|max:255',
+        'alamat'      => 'required|string',
+        'is_active'   => 'nullable|boolean', // Pastikan ini ditangani
+    ]);
+
+    // Menggunakan $validated lebih aman daripada $request->all()
+    $cabang->update($validated);
+
+    return redirect()->route('admin.cabang.index')->with('success', 'Data cabang diperbarui!');
+}
+public function destroy($id)
+{
+    // 1. Ambil data cabang
+    $cabang = Cabang::findOrFail($id);
+
+    // 2. Cek relasi menggunakan method model
+    if ($cabang->menus()->exists()) {
+        return redirect()->route('admin.cabang.index')->with('error', 'Masih ada menu terhubung!');
     }
 
-    public function edit($id)
-    {
-        $cabang = DB::table('tb_cabang')->where('id_cabang', $id)->first();
-
-        // ✅ null check
-        if (!$cabang) {
-            return redirect()->route('admin.cabang.index')->with('error', 'Cabang tidak ditemukan!');
-        }
-
-        return view('admin.cabang.edit', compact('cabang'));
+    // 3. Cek User - Gunakan Query Builder secara eksplisit jika Intelephense bingung
+    if (\App\Models\User::query()->where('id_cabang', $id)->exists()) {
+        return redirect()->route('admin.cabang.index')->with('error', 'Masih ada user aktif!');
     }
 
-    public function update(Request $request, $id)
-    {
-        $request->validate([
-            'nama_cabang' => 'required',
-            'alamat'      => 'required',
-        ]);
-
-        DB::table('tb_cabang')->where('id_cabang', $id)->update([
-            'nama_cabang' => $request->nama_cabang,
-            'alamat'      => $request->alamat,
-            'is_active'   => $request->boolean('is_active'), // ✅ cast boolean
-            'updated_at'  => now(),
-        ]);
-
-        return redirect()->route('admin.cabang.index')->with('success', 'Data cabang diperbarui!');
+    // 4. Cek Penjualan
+    if (\App\Models\Penjualan::query()->where('id_cabang', $id)->exists()) {
+        return redirect()->route('admin.cabang.index')->with('error', 'Masih ada data transaksi!');
     }
 
-    public function destroy($id)
-    {
-        // ✅ cek apakah cabang masih punya user
-        $adaUser = DB::table('tb_user')->where('id_cabang', $id)->exists();
-        if ($adaUser) {
-            return redirect()->route('admin.cabang.index')
-                ->with('error', 'Cabang tidak bisa dihapus karena masih memiliki user aktif!');
-        }
+    // 5. Hapus
+    $cabang->delete();
 
-        // ✅ cek apakah cabang masih punya transaksi
-        $adaTransaksi = DB::table('tb_penjualan')->where('id_cabang', $id)->exists();
-        if ($adaTransaksi) {
-            return redirect()->route('admin.cabang.index')
-                ->with('error', 'Cabang tidak bisa dihapus karena masih memiliki data transaksi!');
-        }
+    return redirect()->route('admin.cabang.index')->with('success', 'Cabang telah dihapus!');
+}
+public function show($id)
+{
+    // findOrFail otomatis mengarahkan ke 404 jika data tidak ditemukan
+    $cabang = Cabang::findOrFail($id);
 
-        DB::table('tb_cabang')->where('id_cabang', $id)->delete();
-        return redirect()->route('admin.cabang.index')->with('success', 'Cabang telah dihapus!');
-    }
-
-    public function show($id)
-    {
-        // ✅ konsisten pakai DB::table, bukan Eloquent
-        $cabang = DB::table('tb_cabang')->where('id_cabang', $id)->first();
-
-        if (!$cabang) {
-            return redirect()->route('admin.cabang.index')->with('error', 'Cabang tidak ditemukan!');
-        }
-
-        return view('admin.cabang.show', compact('cabang'));
-    }
+    return view('admin.cabang.show', compact('cabang'));
+}
 }

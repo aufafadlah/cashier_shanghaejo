@@ -42,78 +42,41 @@ class DashboardController extends Controller
         $totalOmzet = $queryPenjualan->sum('total_bayar') ?? 0;
         $countTransaksi = $queryPenjualan->count();
         $totalBeli = $queryPengeluaran->sum('harga_total') ?? 0;
+        $totalPelanggan = (clone $queryPenjualan)->distinct('nama_pelanggan')->count('nama_pelanggan');
         $countMenu = DB::table('tb_menu')->where('is_active', 1)->count();
 
 
         // =========================================================
-        // 2. QUERY GRAFIK HOURLY SALES (LINE CHART)
+        // 2. QUERY GRAFIK HOURLY SALES (ApexCharts format)
         // =========================================================
-        $queryJam = DB::table('tb_penjualan')
-            ->join('tb_detail_penjualan', 'tb_penjualan.id_penjualan', '=', 'tb_detail_penjualan.id_penjualan')
-            ->select(
-                DB::raw('HOUR(tb_penjualan.created_at) as jam'),
-                DB::raw('SUM(tb_detail_penjualan.qty) as total_porsi'),
-                DB::raw('SUM(tb_penjualan.total_bayar) as total_rupiah')
-            )
-            ->where('tb_penjualan.status_transaksi', 'berhasil')
-            ->whereDate('tb_penjualan.created_at', $hariIni)
-            ->groupBy(DB::raw('HOUR(tb_penjualan.created_at)'))
-            ->orderBy('jam', 'asc');
-
-        if ($selectedCabang) {
-            $queryJam->where('tb_penjualan.id_cabang', $selectedCabang);
-        }
-
-        $rawChartData = $queryJam->get();
-
-        // Siapkan array data rapi (Chart.js membutuhkan angka 0 agar grafik merender)
-        $chartLabels = [];
-        $chartPorsi = [];
-        $chartRupiah = [];
-
-        // Looping jam operasional sesuai template (Jam 10 pagi - 8 malam)
-        for ($i = 10; $i <= 20; $i += 2) {
-            $jamString = sprintf('%02d:00', $i);
-            $chartLabels[] = $jamString;
-
-            // Cari apakah di database ada data pada jam ini
-            $match = $rawChartData->firstWhere('jam', $i);
-            
-            // Jika ada data porsi (int), masukkan. Jika tidak, isi 0 (wajib!).
-            $chartPorsi[] = $match ? (int)$match->total_porsi : 0;
-            $chartRupiah[] = $match ? (int)$match->total_rupiah : 0;
-        }
+        $grafikData = (clone $queryPenjualan)
+            ->select(DB::raw('HOUR(created_at) AS jam'), DB::raw('COUNT(*) AS total_transaksi'), DB::raw('SUM(total_bayar) AS total_pendapatan'))
+            ->groupBy(DB::raw('HOUR(created_at)'))
+            ->orderBy(DB::raw('HOUR(created_at)'))
+            ->get();
 
 
         // =========================================================
-        // 3. QUERY METODE PEMBAYARAN (DONUT CHART)
+        // 3. QUERY METODE PEMBAYARAN (ApexCharts format)
         // =========================================================
-        $queryPie = DB::table('tb_penjualan')
-            ->select('metode_pembayaran', DB::raw('count(*) as total'))
-            ->where('status_transaksi', 'berhasil')
-            ->whereDate('created_at', $hariIni)
-            ->groupBy('metode_pembayaran');
+        $rawPie = (clone $queryPenjualan)
+            ->select(DB::raw('UPPER(TRIM(metode_pembayaran)) AS metode'), DB::raw('COUNT(*) AS jumlah'))
+            ->groupBy(DB::raw('UPPER(TRIM(metode_pembayaran))'))
+            ->get();
 
-        if ($selectedCabang) {
-            $queryPie->where('id_cabang', $selectedCabang);
+        $metodePembayaran = [];
+        foreach ($rawPie as $row) {
+            $key = match (strtolower($row->metode)) {
+                'qris'  => 'QRIS',
+                'cash'  => 'Cash',
+                default => ucfirst(strtolower($row->metode)),
+            };
+            $metodePembayaran[$key] = $row->jumlah;
         }
 
-        $rawPieData = $queryPie->get();
-        $totalTransactionsPie = $rawPieData->sum('total');
-
-        // Hitung persen QRIS vs CASH
-        $qrisCount = $rawPieData->where('metode_pembayaran', 'qris')->first()->total ?? 0;
-        $cashCount = $rawPieData->where('metode_pembayaran', 'cash')->first()->total ?? 0;
-
-        $pieData = [
-            'qris' => $totalTransactionsPie > 0 ? round(($qrisCount / $totalTransactionsPie) * 100) : 0,
-            'cash' => $totalTransactionsPie > 0 ? round(($cashCount / $totalTransactionsPie) * 100) : 0,
-        ];
-
-        // Jika data pembayaran kosong total, beri default 0% agar donut chart tidak pecah
-        if ($pieData['qris'] == 0 && $pieData['cash'] == 0) {
-            $pieData = ['qris' => 0, 'cash' => 0];
-        }
+        $totalMetode = array_sum($metodePembayaran);
+        $qrisPct = $totalMetode > 0 ? round(($metodePembayaran['QRIS'] ?? 0) / $totalMetode * 100) : 0;
+        $cashPct = $totalMetode > 0 ? round(($metodePembayaran['Cash'] ?? 0) / $totalMetode * 100) : 0;
 
 
         // =========================================================
@@ -159,11 +122,12 @@ class DashboardController extends Controller
             'totalOmzet', 
             'countTransaksi', 
             'totalBeli', 
+            'totalPelanggan',
             'countMenu', 
-            'chartLabels',
-            'chartPorsi',
-            'chartRupiah',
-            'pieData',
+            'grafikData',
+            'metodePembayaran',
+            'qrisPct',
+            'cashPct',
             'targetMenu',
             'transaksi',
             'daftarCabang',

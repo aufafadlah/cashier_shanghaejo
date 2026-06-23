@@ -6,13 +6,18 @@ use Illuminate\Foundation\Configuration\Middleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web: __DIR__.'/../routes/web.php',
+        web: __DIR__.'/../routes/web.php', // PASTIKAN BARIS INI ADA
         commands: __DIR__.'/../routes/console.php',
+        channels: __DIR__.'/../routes/channels.php', // Tambahkan ini agar channels.php terbaca
         health: '/up',
     )
-    ->withMiddleware(function (Middleware $middleware): void {
-        //
+    ->withMiddleware(function (Middleware $middleware) {
+        // Daftarkan alias role Anda di sini
+        $middleware->alias([
+            'role' => \App\Http\Middleware\RoleMiddleware::class,
+        ]);
     })
-    ->withExceptions(function (Exceptions $exceptions): void {
+    ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();
+    

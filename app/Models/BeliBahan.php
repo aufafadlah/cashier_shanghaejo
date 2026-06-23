@@ -22,13 +22,15 @@ class BeliBahan extends Model
 
     public $timestamps = true;
 
-    // --- TAMBAHKAN DI SINI ---
-    /**
-     * Relasi ke model Cabang
-     * id_cabang di tabel ini merujuk ke id_cabang di tabel tb_cabang
-     */
+
     public function cabang()
     {
         return $this->belongsTo(Cabang::class, 'id_cabang', 'id_cabang');
     }
+        public function scopeFilterCabang($query)
+{
+    return $query->when(request('id_cabang'), function ($q) {
+        $q->where('id_cabang', request('id_cabang'));
+    });
+}
 }

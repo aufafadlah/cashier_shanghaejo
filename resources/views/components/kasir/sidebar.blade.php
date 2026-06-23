@@ -12,12 +12,6 @@
 {{-- Menu List --}}
 <div class="flex-1 overflow-y-auto py-4 px-3">
     <ul class="space-y-1">
-                    <li>
-                {{-- <a href="{{ route('kasir.dashboard') }}" class="flex items-center p-3 rounded-xl transition-all {{ request()->is('kasir.dashboard.*') ? 'bg-teal-50 text-teal-700 shadow-sm' : 'text-gray-600 hover:bg-teal-50 hover:text-teal-700' }} group"> --}}
-                    <i class="fa-solid fa-house w-5 text-center"></i>
-                    <span class="ms-3 font-semibold text-sm">Dashboard</span>
-                </a>
-            </li>
         {{-- Gunakan in_array untuk jaga-jaga kalau role-nya ada variasi --}}
         @php $userRole = strtolower(auth()->user()->role); @endphp
 

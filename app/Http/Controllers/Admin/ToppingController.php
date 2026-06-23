@@ -10,6 +10,7 @@ class ToppingController extends Controller
 {
     public function index()
     {
+     
         $topings = DB::table('tb_toping')->get();
         $totalToping = $topings->count();
         $aktif = $topings->where('is_active', 1)->count();

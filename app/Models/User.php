@@ -37,4 +37,10 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Cabang::class, 'id_cabang', 'id_cabang');
     }
+    public function scopeFilterCabang($query)
+{
+    return $query->when(request('id_cabang'), function ($q) {
+        $q->where('id_cabang', request('id_cabang'));
+    });
+}
 }

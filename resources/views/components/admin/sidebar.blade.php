@@ -54,16 +54,8 @@
                 </a>
             </li>
 
-            {{-- Kelola Target --}}
-            <li>
-                <a href="{{ route('admin.target.index') }}" 
-                   class="flex items-center p-3 mx-2 rounded-xl transition-all {{ request()->routeIs('admin.target.*') ? 'bg-teal-50 text-teal-700 shadow-sm' : 'text-gray-600 hover:bg-teal-50 hover:text-teal-700' }} group">
-                    <i class="fa-solid fa-bullseye w-5 text-center"></i>
-                    <span class="ms-3 font-semibold text-sm">Kelola Target</span>
-                </a>
-            </li>
 
-            {{-- Kelola Pengeluaran (Fixed route typo 'pemelian' to 'pembelian') --}}
+           
             <li>
                 <a href="{{ route('admin.pembelian.index') }}" 
                    class="flex items-center p-3 mx-2 rounded-xl transition-all {{ request()->routeIs('admin.pembelian.*') ? 'bg-teal-50 text-teal-700 shadow-sm' : 'text-gray-600 hover:bg-teal-50 hover:text-teal-700' }} group">
@@ -74,55 +66,21 @@
             
             <hr class="my-4 border-gray-100 mx-4">
 
-            {{-- Dropdown Laporan Penjualan --}}
-            <li x-data="{ open: {{ request()->is('admin/laporan*') ? 'true' : 'false' }} }">
-                <button @click="open = !open" 
-                        class="flex items-center w-[calc(100%-1rem)] p-3 mx-2 text-gray-600 rounded-xl hover:bg-teal-50 hover:text-teal-700 transition-all group">
-                    <i class="fa-solid fa-file-invoice-dollar w-5 text-center"></i>
-                    <span class="flex-1 ms-3 text-left font-semibold text-sm">Laporan Penjualan</span>
-                    <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
-                </button>
-                
-                <ul x-show="open" 
-                    x-cloak 
-                    x-transition:enter="transition ease-out duration-100"
-                    x-transition:enter-start="transform opacity-0 scale-95"
-                    x-transition:enter-end="transform opacity-100 scale-100"
-                    class="mt-1 space-y-1 px-10">
-                    <li>
-                        <a href="{{ route('admin.laporan.harian') }}" 
-                           class="block p-2 rounded-lg text-sm transition-all {{ request()->routeIs('admin.laporan.harian') ? 'text-teal-700 font-bold' : 'text-gray-500 hover:text-teal-700' }}">
-                           • Harian
-                        </a>
-                    </li>
-                    <li>
-                        <a href="{{ route('admin.laporan.bulanan') }}" 
-                           class="block p-2 rounded-lg text-sm transition-all {{ request()->routeIs('admin.laporan.bulanan') ? 'text-teal-700 font-bold' : 'text-gray-500 hover:text-teal-700' }}">
-                           • Bulanan
-                        </a>
-                    </li>
-                    <li>
-                        <a href="{{ route('admin.laporan.tahunan') }}" 
-                           class="block p-2 rounded-lg text-sm transition-all {{ request()->routeIs('admin.laporan.tahunan') ? 'text-teal-700 font-bold' : 'text-gray-500 hover:text-teal-700' }}">
-                           • Tahunan
-                        </a>
-                    </li>
-                </ul>
-            </li>
-
-            {{-- Laporan Target --}}
+            {{-- Laporan Penjualan (gabung 1 page) --}}
             <li>
-                <a href="{{ route('admin.laporantarget.index') }}" 
-                   class="flex items-center p-3 mx-2 rounded-xl transition-all {{ request()->routeIs('admin.laporantarget.*') ? 'bg-teal-50 text-teal-700 shadow-sm' : 'text-gray-600 hover:bg-teal-50 hover:text-teal-700' }} group">
-                    <i class="fa-solid fa-chart-line w-5 text-center"></i>
-                    <span class="ms-3 font-semibold text-sm">Laporan Target</span>
+                <a href="{{ route('admin.laporan.index') }}"
+                   class="flex items-center p-3 mx-2 rounded-xl transition-all {{ request()->routeIs('admin.laporan.*') ? 'bg-teal-50 text-teal-700 shadow-sm' : 'text-gray-600 hover:bg-teal-50 hover:text-teal-700' }} group">
+                    <i class="fa-solid fa-file-invoice-dollar w-5 text-center"></i>
+                    <span class="ms-3 font-semibold text-sm">Laporan Penjualan</span>
                 </a>
             </li>
 
+
+
             {{-- Laporan Pengeluaran --}}
-            {{-- <li>
-                <a href="{{ route('admin.laporanpengeluaran.index') }}" 
-                   class="flex items-center p-3 mx-2 rounded-xl transition-all {{ request()->routeIs('admin.laporanpengeluaran.*') ? 'bg-teal-50 text-teal-700 shadow-sm' : 'text-gray-600 hover:bg-teal-50 hover:text-teal-700' }} group"> --}}
+            <li>
+                <a href="{{ route('admin.laporanpembelian.index') }}" 
+                   class="flex items-center p-3 mx-2 rounded-xl transition-all {{ request()->routeIs('admin.laporanpembelian.*') ? 'bg-teal-50 text-teal-700 shadow-sm' : 'text-gray-600 hover:bg-teal-50 hover:text-teal-700' }} group">
                     <i class="fa-solid fa-file-export w-5 text-center"></i>
                     <span class="ms-3 font-semibold text-sm">Laporan Pengeluaran</span>
                 </a>

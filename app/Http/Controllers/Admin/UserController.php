@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Admin;
-
+use App\Models\User;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -10,19 +10,16 @@ use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
-    public function index()
-    {
-        $users = DB::table('tb_user')
-            ->leftJoin('tb_cabang', 'tb_user.id_cabang', '=', 'tb_cabang.id_cabang')
-            ->select('tb_user.*', 'tb_cabang.nama_cabang')
-            ->get();
+public function index() {
+    // Menggunakan with() untuk Eager Loading relasi cabang
+    $users = User::with('cabang')->filterCabang()->get();
 
-        $totalUsers = $users->count();
-        $aktif      = $users->where('is_active', 1)->count();
-        $nonAktif   = $users->where('is_active', 0)->count();
+    $totalUsers = $users->count();
+    $aktif      = $users->where('is_active', 1)->count();
+    $nonAktif   = $users->where('is_active', 0)->count();
 
-        return view('admin.user.index', compact('users', 'totalUsers', 'aktif', 'nonAktif'));
-    }
+    return view('admin.user.index', compact('users', 'totalUsers', 'aktif', 'nonAktif'));
+}
 
     public function create()
     {

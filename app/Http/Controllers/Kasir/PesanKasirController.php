@@ -9,28 +9,56 @@ use Illuminate\Support\Facades\Auth;
 
 class PesanKasirController extends Controller
 {
-    public function index()
-    {
-        // Ambil menu & topping yang aktif saja
-        $menus = DB::table('tb_menu')->where('is_active', 1)->get();
-        $toppings = DB::table('tb_toping')->where('is_active', 1)->get();
-        $cart = session()->get('cart', []);
+public function index()
+{
+    $id_cabang = Auth::user()->id_cabang;
 
-        return view('kasir.pesan.index', compact('menus', 'toppings', 'cart'));
+$menus = DB::table('tb_menu')
+        ->join('branch_menu', 'tb_menu.id_menu', '=', 'branch_menu.menu_id')
+        ->where('branch_menu.branch_id', $id_cabang) 
+        ->where('branch_menu.is_active', 1) // Lebih aman menggunakan is_active dari tabel jembatan
+        ->select(
+            'tb_menu.id_menu', 
+            'tb_menu.nama_menu', 
+            'branch_menu.harga_menu' // ✅ AMBIL HARGA DARI TABEL CABANG
+        ) 
+        ->get();
+
+    $toppings = DB::table('tb_toping')
+        ->where('is_active', 1)
+        ->get();
+                
+    $cart = session()->get('cart', []);
+
+    return view('kasir.pesan.index', compact('menus', 'toppings', 'cart'));
+}
+
+public function addToCart(Request $request)
+{
+    $request->validate([
+        'menu_id' => 'required',
+        'qty' => 'required|integer|min:1'
+    ]);
+
+    $id_cabang = Auth::user()->id_cabang;
+
+    // ✅ UBAH BAGIAN INI: Ambil menu dan harga spesifik cabang
+    $menu = DB::table('tb_menu')
+        ->join('branch_menu', 'tb_menu.id_menu', '=', 'branch_menu.menu_id')
+        ->where('tb_menu.id_menu', $request->menu_id)
+        ->where('branch_menu.branch_id', $id_cabang)
+        ->select('tb_menu.id_menu', 'tb_menu.nama_menu', 'branch_menu.harga_menu')
+        ->first();
+
+    // Proteksi jika menu tidak ada di cabang tersebut
+    if (!$menu) {
+        return redirect()->back()->with('error', 'Menu tidak tersedia untuk cabang ini!');
     }
 
-    public function addToCart(Request $request)
-    {
-        $request->validate([
-            'menu_id' => 'required',
-            'qty' => 'required|integer|min:1'
-        ]);
+    $selectedToppings = DB::table('tb_toping')->whereIn('id_toping', $request->toppings ?? [])->get();
 
-        $menu = DB::table('tb_menu')->where('id_menu', $request->menu_id)->first();
-        $selectedToppings = DB::table('tb_toping')->whereIn('id_toping', $request->toppings ?? [])->get();
-
-        $processedToppings = [];
-        $toppingTotalHarga = 0;
+    $processedToppings = [];
+    $toppingTotalHarga = 0;
 
         // LOGIKA: 2 Topping pertama GRATIS
         foreach ($selectedToppings as $index => $top) {
@@ -122,10 +150,67 @@ class PesanKasirController extends Controller
                 'success' => true, 
                 'id_penjualan' => $id
             ]);
+} catch (\Exception $e) {
+            // Catat error di file log (storage/logs/laravel.log)
+            \Illuminate\Support\Facades\Log::error('Checkout Gagal: ' . $e->getMessage());
 
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            // Tampilkan error langsung di layar menggunakan dd() sementara
+            dd('ERROR CHECKOUT: ', $e->getMessage(), 'Di Baris: ' . $e->getLine());
+            
+            // return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
+    }
+
+    public function riwayat()
+    {
+        $id_cabang = Auth::user()->id_cabang;
+        $today = now()->toDateString();
+
+        // Get today's successful orders for this branch, ordered by creation time
+        $orders = DB::table('tb_penjualan')
+            ->leftJoin('tb_user', 'tb_penjualan.id_user', '=', 'tb_user.id_user')
+            ->where('tb_penjualan.id_cabang', $id_cabang)
+            ->where('tb_penjualan.status_transaksi', 'berhasil')
+            ->whereDate('tb_penjualan.created_at', $today)
+            ->select(
+                'tb_penjualan.*',
+                'tb_user.name as nama_kasir'
+            )
+            ->orderBy('tb_penjualan.created_at', 'asc')
+            ->get();
+
+        // Assign daily sequential number (no_urut)
+        foreach ($orders as $index => $order) {
+            $order->no_urut = $index + 1;
+        }
+
+        return view('kasir.riwayat.index', compact('orders'));
+    }
+
+    public function deleteOrder($id)
+    {
+        $id_cabang = Auth::user()->id_cabang;
+
+        // Verify the order belongs to this branch
+        $order = DB::table('tb_penjualan')
+            ->where('id_penjualan', $id)
+            ->where('id_cabang', $id_cabang)
+            ->where('status_transaksi', 'berhasil')
+            ->first();
+
+        if (!$order) {
+            return redirect()->route('kasir.riwayat.index')->with('error', 'Pesanan tidak ditemukan!');
+        }
+
+        // Mark as failed instead of deleting (audit trail)
+        DB::table('tb_penjualan')
+            ->where('id_penjualan', $id)
+            ->update([
+                'status_transaksi' => 'gagal',
+                'updated_at' => now(),
+            ]);
+
+        return redirect()->route('kasir.riwayat.index')->with('success', 'Pesanan berhasil dihapus!');
     }
 
     public function printStruk($id)
@@ -145,6 +230,17 @@ class PesanKasirController extends Controller
         if (!$penjualan) {
             return "Gagal: ID $id tidak ditemukan.";
         }
+
+        // Calculate daily sequential number for this receipt
+        $today = date('Y-m-d', strtotime($penjualan->created_at));
+        $no_urut = DB::table('tb_penjualan')
+            ->where('id_cabang', $penjualan->id_cabang)
+            ->where('status_transaksi', 'berhasil')
+            ->whereDate('created_at', $today)
+            ->where('created_at', '<=', $penjualan->created_at)
+            ->count();
+
+        $penjualan->no_urut = $no_urut;
 
         $details = DB::table('tb_detail_penjualan')
             ->join('tb_menu', 'tb_detail_penjualan.id_menu', '=', 'tb_menu.id_menu')
@@ -204,4 +300,5 @@ class PesanKasirController extends Controller
 
     return redirect()->back();
 }
+
 }

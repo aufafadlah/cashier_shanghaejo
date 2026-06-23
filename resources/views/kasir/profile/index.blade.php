@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.kasir')
 @section('title', 'Profile')
 @section('content')
 <div class="container-fluid p-6 bg-[#F8FAFC] min-h-screen flex flex-col items-center">

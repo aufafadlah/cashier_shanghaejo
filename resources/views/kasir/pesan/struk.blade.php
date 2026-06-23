@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Struk - {{ $penjualan->id_penjualan }}</title>
+    <title>Struk - SHJ-{{ date('dmy', strtotime($penjualan->created_at)) }}-{{ str_pad($penjualan->no_urut, 3, '0', STR_PAD_LEFT) }}</title>
     <style>
         body { 
             font-family: 'Inter', sans-serif; 
@@ -125,7 +125,7 @@
 
     <div class="flex-between">
         <span>No:</span>
-        <span>{{ $penjualan->id_penjualan }}</span>
+        <span>SHJ-{{ date('dmy', strtotime($penjualan->created_at)) }}-{{ str_pad($penjualan->no_urut, 3, '0', STR_PAD_LEFT) }}</span>
     </div>
 
     <div class="flex-between">
