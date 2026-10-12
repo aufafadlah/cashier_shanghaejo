@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('content')
 
@@ -37,13 +37,18 @@
             @enderror
         </div>
 
-        {{-- Password --}}
-        <div>
+        {{-- Password with Toggle --}}
+        <div x-data="{ showPass: false }">
             <label class="text-sm font-medium text-gray-700">Password Baru</label>
-            <input type="password" 
-                   name="password" 
-                   placeholder="Kosongkan jika tidak diganti"
-                   class="w-full mt-1 px-3 py-2 border rounded-md focus:ring-2 focus:ring-green-200 outline-none transition">
+            <div class="relative">
+                <input :type="showPass ? 'text' : 'password'" 
+                       name="password" 
+                       placeholder="Kosongkan jika tidak diganti"
+                       class="w-full mt-1 px-3 py-2 pr-10 border rounded-md focus:ring-2 focus:ring-green-200 outline-none transition">
+                <button type="button" @click="showPass = !showPass" tabindex="-1" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-teal-600 transition-colors">
+                    <i class="fa-solid" :class="showPass ? 'fa-eye-slash' : 'fa-eye'"></i>
+                </button>
+            </div>
             <p class="text-[9px] text-gray-400 mt-1 italic leading-tight">*Isi hanya jika ingin mengubah password</p>
         </div>
     </div>

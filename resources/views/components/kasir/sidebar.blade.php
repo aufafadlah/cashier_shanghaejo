@@ -1,5 +1,6 @@
 {{-- @extends('layouts.app') --}}
-<aside class="fixed top-0 left-0 z-40 w-64 h-screen bg-white border-r border-gray-100 flex flex-col shadow-sm">
+<div x-show="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 z-30 bg-slate-900/30 backdrop-blur-[1px] lg:hidden" x-cloak></div>
+<aside class="fixed top-0 left-0 z-40 w-64 h-screen bg-white border-r border-gray-100 flex flex-col shadow-sm transition-transform duration-300 transform -translate-x-full lg:translate-x-0" :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
     {{-- Header Logo --}}
     <div class="p-6 flex items-center gap-3 border-b border-gray-50">
         <img src="{{ asset('img/shanghaejo.jpg') }}" class="w-10 h-10 rounded-full shadow-sm" alt="Logo">

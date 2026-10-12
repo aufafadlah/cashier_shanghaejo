@@ -9,9 +9,19 @@ class AppServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
-        // Bagikan data ke semua view
-        View::composer('*', function ($view) {
-            $view->with('daftarCabang', DB::table('tb_cabang')->get());
+        \Illuminate\Pagination\Paginator::useTailwind();
+
+        // Bagikan data daftar cabang hanya 1 kali per request untuk efisiensi performa
+        View::composer(['components.admin.navbar', 'components.kasir.navbar', 'admin.*'], function ($view) {
+            static $daftarCabang = null;
+            if ($daftarCabang === null) {
+                try {
+                    $daftarCabang = DB::table('tb_cabang')->get();
+                } catch (\Throwable $e) {
+                    $daftarCabang = collect();
+                }
+            }
+            $view->with('daftarCabang', $daftarCabang);
         });
     }
 }

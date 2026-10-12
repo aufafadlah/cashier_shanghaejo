@@ -52,11 +52,12 @@
                     {{-- Input Harga Spesifik untuk Cabang Ini --}}
                     <div class="flex items-center space-x-2">
                         <span class="text-xs text-gray-400">Rp</span>
-                        <input type="number" 
+                        <input type="text" 
+                               inputmode="numeric"
                                name="harga_cabang[{{ $branch->id_cabang }}]" 
-                               value="{{ old('harga_cabang.' . $branch->id_cabang) }}"
-                               placeholder="Harga"
-                               class="w-36 px-2 py-1 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-green-100 focus:border-green-400 outline-none">
+                               value="{{ old('harga_cabang.' . $branch->id_cabang) }}" 
+                               placeholder="0"
+                               class="input-currency w-40 sm:w-44 px-2 py-1 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-green-100 focus:border-green-400 outline-none">
                     </div>
                 </div>
             @endforeach

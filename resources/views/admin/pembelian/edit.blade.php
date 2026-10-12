@@ -33,10 +33,13 @@
             {{-- 3. Harga Satuan --}}
             <div>
                 <label class="text-sm font-medium text-gray-700">Harga Satuan (Rp)</label>
-                <input type="number" name="harga_satuan" 
-                    value="{{ old('harga_satuan', $pengeluaran->harga_satuan) }}"
-                    class="w-full mt-1 px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-100 focus:border-[#7AB465] outline-none"
-                    required>
+                <div class="relative mt-1">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-semibold">Rp</span>
+                    <input type="text" inputmode="numeric" name="harga_satuan" 
+                        value="{{ old('harga_satuan', (int) $pengeluaran->harga_satuan) }}"
+                        class="input-currency w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-100 focus:border-[#7AB465] outline-none"
+                        required>
+                </div>
             </div>
 
             {{-- 4. Qty --}}

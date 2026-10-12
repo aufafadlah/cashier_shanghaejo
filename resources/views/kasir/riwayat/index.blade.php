@@ -1,7 +1,7 @@
 @extends('layouts.kasir')
 @section('title', 'Riwayat Pesanan')
 @section('content')
-<div class="h-screen bg-[#f1f5f9] p-3 font-sans overflow-hidden" x-data="{ deleteId: null }" x-cloak>
+<div class="h-screen bg-[#f1f5f9] p-3 font-sans overflow-hidden" x-data="{ deleteId: null, search: '{{ request('search', '') }}' }" x-cloak>
 
     <div class="max-w-[1600px] mx-auto h-[calc(100vh-140px)] flex flex-col">
 
@@ -14,7 +14,17 @@
                 </h2>
                 <p class="text-xs text-slate-400 mt-1 font-medium">{{ now()->translatedFormat('l, d F Y') }}</p>
             </div>
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+                <a href="{{ route('kasir.riwayat.export.excel') }}" 
+                   class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg text-xs font-bold transition-all border border-emerald-200 shadow-sm">
+                    <i class="fa-solid fa-file-excel text-emerald-600"></i>
+                    <span>Export Excel</span>
+                </a>
+                <a href="{{ route('kasir.riwayat.export.pdf') }}" target="_blank"
+                   class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-lg text-xs font-bold transition-all border border-rose-200 shadow-sm">
+                    <i class="fa-solid fa-file-pdf text-rose-600"></i>
+                    <span>Export PDF</span>
+                </a>
                 <span class="text-[10px] bg-teal-50 text-teal-700 px-3 py-1.5 rounded-lg font-bold uppercase tracking-wide">
                     <i class="fa-solid fa-receipt mr-1"></i> {{ count($orders) }} Pesanan
                 </span>
@@ -29,6 +39,21 @@
 
         {{-- Table Container --}}
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 flex-1 flex flex-col overflow-hidden">
+
+            {{-- Live Search Toolbar --}}
+            <div class="px-5 py-3 border-b border-slate-100 flex items-center justify-between gap-4 bg-white">
+                <div class="relative flex-1 max-w-md">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input type="text" x-model="search" placeholder="Cari no struk, nama pelanggan, kasir, tunai/qris..." 
+                        class="w-full bg-slate-50 border border-slate-200 focus:border-teal-500 rounded-lg pl-9 pr-8 py-2 text-xs outline-none transition-all shadow-inner">
+                    <button x-show="search" @click="search = ''" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs" title="Reset">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+                <div class="text-[11px] text-slate-400 font-medium hidden sm:block">
+                    <i class="fa-solid fa-bolt text-amber-500 mr-1"></i> Live Search Aktif
+                </div>
+            </div>
 
             @if(session('success'))
             <div class="mx-5 mt-4 p-3 bg-green-50 border border-green-200 rounded-xl text-xs font-bold text-green-700 flex items-center gap-2">
@@ -57,7 +82,12 @@
             {{-- Table Body --}}
             <div class="flex-1 overflow-y-auto custom-scrollbar">
                 @foreach($orders as $order)
-                <div class="grid grid-cols-12 gap-3 px-5 py-3 border-b border-slate-50 items-center hover:bg-slate-50/50 transition-colors group">
+                <div x-show="!search || 
+                    '{{ addslashes(strtolower($order->nama_pelanggan)) }}'.includes(search.toLowerCase()) || 
+                    'shj-{{ date('dmy', strtotime($order->created_at)) }}-{{ str_pad($order->no_urut, 3, '0', STR_PAD_LEFT) }}'.toLowerCase().includes(search.toLowerCase()) || 
+                    '{{ strtolower($order->metode_pembayaran) }}'.includes(search.toLowerCase()) ||
+                    '{{ addslashes(strtolower($order->nama_kasir ?? '')) }}'.includes(search.toLowerCase())"
+                    class="grid grid-cols-12 gap-3 px-5 py-3 border-b border-slate-50 items-center hover:bg-slate-50/50 transition-colors group">
                     {{-- No Urut --}}
                     <div class="col-span-1 text-center">
                         <span class="inline-flex items-center justify-center w-7 h-7 bg-slate-100 text-slate-600 text-[10px] font-bold rounded-lg group-hover:bg-teal-50 group-hover:text-teal-700 transition-colors">
@@ -99,7 +129,7 @@
 
                     {{-- Aksi --}}
                     <div class="col-span-2 flex items-center justify-center gap-2">
-                        <a href="{{ route('kasir.pesan.print', $order->id_penjualan) }}" target="_blank"
+                        <a href="{{ route('kasir.pesan.print', $order->id_penjualan) }}"
                            class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-bold hover:bg-blue-100 transition-colors uppercase">
                             <i class="fa-solid fa-print text-[9px]"></i> Cetak
                         </a>
@@ -160,9 +190,27 @@
     </template>
 </div>
 
+<script>
+    // Auto-reset Harian: Jika berganti hari / tanggal berubah saat aplikasi dibuka, refresh otomatis
+    document.addEventListener('DOMContentLoaded', function() {
+        const pageDate = '{{ now()->timezone('Asia/Jakarta')->toDateString() }}';
+        function checkDailyReset() {
+            const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta' }).format(new Date());
+            if (today !== pageDate) {
+                window.location.reload();
+            }
+        }
+        setInterval(checkDailyReset, 30000);
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                checkDailyReset();
+            }
+        });
+    });
+</script>
+
 <style>
-    body { overflow: hidden !important; }
-    .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     [x-cloak] { display: none !important; }

@@ -2,7 +2,7 @@
 
 @section('content')
 <x-modal-form 
-    title="Edit Data Menu (Many to Many)" 
+    title="Edit Data Menu" 
     :action="route('admin.menu.update', $menu->id_menu)" 
     method="PUT" 
     :cancelUrl="route('admin.menu.index')"
@@ -28,9 +28,10 @@
                 @php
                     // Cari tahu apakah menu ini sudah terdaftar di cabang saat ini
                     $pivotData = $menu->cabangs->where('id_cabang', $branch->id_cabang)->first();
-                    $hasBranch = !is_null($pivotData);
+                    // Checkbox hanya centang jika pivot ada DAN is_active = true
+                    $hasBranch = $pivotData && $pivotData->pivot->is_active;
                     // Ambil harga lama dari tabel jembatan jika ada, jika tidak kosongkan
-                    $oldPrice = $pivotData ? $pivotData->pivot->harga_menu : '';
+                    $oldPrice = ($pivotData && $pivotData->pivot->harga_menu !== null) ? (int) $pivotData->pivot->harga_menu : '';
                 @endphp
 
                 <div class="flex items-center justify-between p-2 bg-white rounded-lg border border-gray-100 shadow-sm">
@@ -47,11 +48,12 @@
                     {{-- Input Harga Spesifik Cabang --}}
                     <div class="flex items-center space-x-2">
                         <span class="text-xs text-gray-400">Rp</span>
-                        <input type="number" 
+                        <input type="text" 
+                               inputmode="numeric"
                                name="harga_cabang[{{ $branch->id_cabang }}]" 
                                value="{{ old('harga_cabang.' . $branch->id_cabang, $oldPrice) }}"
-                               placeholder="Harga"
-                               class="w-36 px-2 py-1 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-green-100 focus:border-green-400 outline-none">
+                               placeholder="0"
+                               class="input-currency w-40 sm:w-44 px-2 py-1 text-sm border border-gray-200 rounded-md focus:ring-2 focus:ring-green-100 focus:border-green-400 outline-none">
                     </div>
                 </div>
             @endforeach

@@ -8,16 +8,23 @@ use Illuminate\Support\Facades\DB;
 
 class CabangController extends Controller
 {
-public function index()
+public function index(Request $request)
 {
-    // Menggunakan Eloquent: Cabang::all() otomatis memanggil semua data
-   $cabangs = Cabang::all();
-  
+    $totalCabang = Cabang::count();
+    $aktif       = Cabang::where('is_active', true)->count();
+    $nonAktif    = Cabang::where('is_active', false)->count();
 
-    // Eloquent collection memiliki method count() dan where() yang sangat powerful
-    $totalCabang = $cabangs->count();
-    $aktif       = $cabangs->where('is_active', true)->count();
-    $nonAktif    = $cabangs->where('is_active', false)->count();
+    $query = Cabang::orderBy('id_cabang', 'desc');
+
+    if ($request->filled('search')) {
+        $search = $request->input('search');
+        $query->where(function ($q) use ($search) {
+            $q->where('nama_cabang', 'like', "%{$search}%")
+              ->orWhere('alamat', 'like', "%{$search}%");
+        });
+    }
+
+    $cabangs = $query->paginate(10)->withQueryString();
 
     return view('admin.cabang.index', compact('cabangs', 'totalCabang', 'aktif', 'nonAktif'));
 }
@@ -70,25 +77,21 @@ public function destroy($id)
     // 1. Ambil data cabang
     $cabang = Cabang::findOrFail($id);
 
-    // 2. Cek relasi menggunakan method model
-    if ($cabang->menus()->exists()) {
-        return redirect()->route('admin.cabang.index')->with('error', 'Masih ada menu terhubung!');
-    }
-
-    // 3. Cek User - Gunakan Query Builder secara eksplisit jika Intelephense bingung
-    if (\App\Models\User::query()->where('id_cabang', $id)->exists()) {
-        return redirect()->route('admin.cabang.index')->with('error', 'Masih ada user aktif!');
-    }
-
-    // 4. Cek Penjualan
+    // 2. Cek Penjualan (Kritis untuk audit trail)
     if (\App\Models\Penjualan::query()->where('id_cabang', $id)->exists()) {
-        return redirect()->route('admin.cabang.index')->with('error', 'Masih ada data transaksi!');
+        return redirect()->route('admin.cabang.index')->with('error', 'Tidak dapat menghapus cabang: masih ada data transaksi terhubung!');
     }
+
+    // 3. Jika aman (tidak ada transaksi), hapus User yang terhubung ke cabang ini
+    \App\Models\User::query()->where('id_cabang', $id)->delete();
+
+    // 4. Hapus relasi menu di pivot table (branch_menu)
+    $cabang->menus()->detach();
 
     // 5. Hapus
     $cabang->delete();
 
-    return redirect()->route('admin.cabang.index')->with('success', 'Cabang telah dihapus!');
+    return redirect()->route('admin.cabang.index')->with('success', 'Cabang telah berhasil dihapus!');
 }
 public function show($id)
 {

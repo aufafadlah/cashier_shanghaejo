@@ -13,19 +13,19 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
         
-        // Memastikan string kosong dari URL (?id_cabang=) diubah menjadi null (Semua Cabang)
+        // Admin: gunakan session filter. Kasir: kunci ke cabang sendiri.
         if ($user->role === 'admin') {
-            $selectedCabang = $request->filled('id_cabang') ? $request->get('id_cabang') : null; 
+            $selectedCabang = session('admin_cabang_filter');
         } else {
-            $selectedCabang = $user->id_cabang; // Kunci ke cabang dia sendiri
+            $selectedCabang = $user->id_cabang;
         }
 
-        // AMBIL TANGGAL HARI INI SECARA DINAMIS (Menggunakan Tanggal dari Log: 2026-05-17)
-        // Gunakan Carbon::today() agar jika hari ini tanggal 18, data 17 tidak terbawa.
-        $hariIni = Carbon::today()->toDateString(); 
+        $hariIni    = Carbon::today()->toDateString();
+        $weekStart  = Carbon::today()->startOfWeek(Carbon::MONDAY)->toDateString();
+        $weekEnd    = Carbon::today()->endOfWeek(Carbon::SUNDAY)->toDateString();
 
         // =========================================================
-        // 1. QUERY BOX STATS (Hari Ini)
+        // 1. STATS (Combined aggregate: 1 query instead of 3)
         // =========================================================
         $queryPenjualan = DB::table('tb_penjualan')
             ->where('status_transaksi', 'berhasil')
@@ -39,25 +39,37 @@ class DashboardController extends Controller
             $queryPengeluaran->where('id_cabang', $selectedCabang);
         }
 
-        $totalOmzet = $queryPenjualan->sum('total_bayar') ?? 0;
-        $countTransaksi = $queryPenjualan->count();
-        $totalBeli = $queryPengeluaran->sum('harga_total') ?? 0;
-        $totalPelanggan = (clone $queryPenjualan)->distinct('nama_pelanggan')->count('nama_pelanggan');
-        $countMenu = DB::table('tb_menu')->where('is_active', 1)->count();
-
+        // Single query for count + sum instead of 2 separate queries
+        $aggPenjualan = (clone $queryPenjualan)
+            ->selectRaw('COUNT(*) as total_count, COALESCE(SUM(total_bayar), 0) as total_omzet')
+            ->first();
+        
+        $totalOmzet     = $aggPenjualan->total_omzet;
+        $countTransaksi = $aggPenjualan->total_count;
+        $totalBeli      = $queryPengeluaran->sum('harga_total') ?? 0;
+        $totalPelanggan = $countTransaksi;
+        $countMenu      = DB::table('tb_menu')->where('is_active', 1)->count();
 
         // =========================================================
-        // 2. QUERY GRAFIK HOURLY SALES (ApexCharts format)
+        // 2. GRAFIK MINGGUAN
         // =========================================================
-        $grafikData = (clone $queryPenjualan)
-            ->select(DB::raw('HOUR(created_at) AS jam'), DB::raw('COUNT(*) AS total_transaksi'), DB::raw('SUM(total_bayar) AS total_pendapatan'))
-            ->groupBy(DB::raw('HOUR(created_at)'))
-            ->orderBy(DB::raw('HOUR(created_at)'))
+        $queryMinggu = DB::table('tb_penjualan')
+            ->where('status_transaksi', 'berhasil')
+            ->whereDate('created_at', '>=', $weekStart)
+            ->whereDate('created_at', '<=', $weekEnd);
+
+        if ($selectedCabang) {
+            $queryMinggu->where('id_cabang', $selectedCabang);
+        }
+
+        $grafikData = (clone $queryMinggu)
+            ->select(DB::raw('DAYOFWEEK(created_at) AS dow'), DB::raw('COUNT(*) AS total_transaksi'), DB::raw('SUM(total_bayar) AS total_pendapatan'))
+            ->groupBy(DB::raw('DAYOFWEEK(created_at)'))
+            ->orderBy(DB::raw('DAYOFWEEK(created_at)'))
             ->get();
 
-
         // =========================================================
-        // 3. QUERY METODE PEMBAYARAN (ApexCharts format)
+        // 3. METODE PEMBAYARAN
         // =========================================================
         $rawPie = (clone $queryPenjualan)
             ->select(DB::raw('UPPER(TRIM(metode_pembayaran)) AS metode'), DB::raw('COUNT(*) AS jumlah'))
@@ -78,28 +90,8 @@ class DashboardController extends Controller
         $qrisPct = $totalMetode > 0 ? round(($metodePembayaran['QRIS'] ?? 0) / $totalMetode * 100) : 0;
         $cashPct = $totalMetode > 0 ? round(($metodePembayaran['Cash'] ?? 0) / $totalMetode * 100) : 0;
 
-
         // =========================================================
-        // 4. QUERY TARGET MENU PROGRESS BAR
-        // =========================================================
-        $queryTarget = DB::table('tb_target')
-            ->join('tb_menu', 'tb_target.id_menu', '=', 'tb_menu.id_menu')
-            ->select('tb_target.*', 'tb_menu.nama_menu')
-            ->whereDate('tb_target.tanggal', $hariIni);
-
-        if ($selectedCabang) {
-            $queryTarget->where('tb_target.id_cabang', $selectedCabang);
-        }
-
-        $targetMenu = $queryTarget->get()->map(function($item) {
-            // Hitung persen pencapaian target (Aman pembagian 0)
-            $item->persen = $item->stok_target > 0 ? round(($item->terjual / $item->stok_target) * 100) : 0;
-            return $item;
-        });
-
-
-        // =========================================================
-        // 5. QUERY LIST TRANSAKSI TERBARU (6 DATA TERAKHIR)
+        // 4. TRANSAKSI TERBARU (6 terakhir)
         // =========================================================
         $queryTerbaru = DB::table('tb_penjualan')
             ->whereDate('created_at', $hariIni)
@@ -111,13 +103,27 @@ class DashboardController extends Controller
         }
         $transaksi = $queryTerbaru->get();
 
-
         // =========================================================
-        // 6. QUERY DAFTAR CABANG UNTUK DROPDOWN
+        // 5. DISTRIBUSI CABANG
         // =========================================================
-        $daftarCabang = DB::table('tb_cabang')->get();
+        $queryCabang = DB::table('tb_penjualan')
+            ->leftJoin('tb_cabang', 'tb_penjualan.id_cabang', '=', 'tb_cabang.id_cabang')
+            ->where('tb_penjualan.status_transaksi', 'berhasil')
+            ->whereDate('tb_penjualan.created_at', $hariIni);
 
-        // Return semua variabel ke view blade (Pastikan tidak ada variabel tertinggal)
+        if ($selectedCabang) {
+            $queryCabang->where('tb_penjualan.id_cabang', $selectedCabang);
+        }
+
+        $cabangBreakdown = $queryCabang
+            ->select(DB::raw('COALESCE(tb_cabang.nama_cabang, "Tanpa Cabang") AS nama_cabang'), DB::raw('SUM(tb_penjualan.total_bayar) AS total'))
+            ->groupBy('tb_cabang.nama_cabang')
+            ->orderByDesc('total')
+            ->get();
+
+        // daftarCabang sudah disediakan oleh AppServiceProvider via View Composer
+        // Tidak perlu query ulang di sini
+
         return view('admin.dashboard', compact(
             'totalOmzet', 
             'countTransaksi', 
@@ -128,9 +134,8 @@ class DashboardController extends Controller
             'metodePembayaran',
             'qrisPct',
             'cashPct',
-            'targetMenu',
             'transaksi',
-            'daftarCabang',
+            'cabangBreakdown',
             'selectedCabang'
         ));
     }

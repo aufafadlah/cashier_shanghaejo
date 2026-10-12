@@ -11,26 +11,32 @@ class PesanKasirController extends Controller
 {
 public function index()
 {
+    // Pertahankan cart dari session — jangan clear saat kasir kembali ke halaman POS
+    $cart = session()->get('cart', []);
+
     $id_cabang = Auth::user()->id_cabang;
 
-$menus = DB::table('tb_menu')
+    $menus = DB::table('tb_menu')
         ->join('branch_menu', 'tb_menu.id_menu', '=', 'branch_menu.menu_id')
         ->where('branch_menu.branch_id', $id_cabang) 
-        ->where('branch_menu.is_active', 1) // Lebih aman menggunakan is_active dari tabel jembatan
+        ->where('branch_menu.is_active', 1)
         ->select(
             'tb_menu.id_menu', 
             'tb_menu.nama_menu', 
-            'branch_menu.harga_menu' // ✅ AMBIL HARGA DARI TABEL CABANG
+            'branch_menu.harga_menu'
         ) 
         ->get();
 
     $toppings = DB::table('tb_toping')
         ->where('is_active', 1)
         ->get();
-                
-    $cart = session()->get('cart', []);
 
-    return view('kasir.pesan.index', compact('menus', 'toppings', 'cart'));
+    // Ambil nama cabang untuk ditampilkan di halaman POS
+    $cabang = DB::table('tb_cabang')
+        ->where('id_cabang', $id_cabang)
+        ->first();
+
+    return view('kasir.pesan.index', compact('menus', 'toppings', 'cart', 'cabang'));
 }
 
 public function addToCart(Request $request)
@@ -52,6 +58,9 @@ public function addToCart(Request $request)
 
     // Proteksi jika menu tidak ada di cabang tersebut
     if (!$menu) {
+        if ($request->wantsJson()) {
+            return response()->json(['success' => false, 'message' => 'Menu tidak tersedia untuk cabang ini!'], 404);
+        }
         return redirect()->back()->with('error', 'Menu tidak tersedia untuk cabang ini!');
     }
 
@@ -60,18 +69,27 @@ public function addToCart(Request $request)
     $processedToppings = [];
     $toppingTotalHarga = 0;
 
-        // LOGIKA: 2 Topping pertama GRATIS
-        foreach ($selectedToppings as $index => $top) {
-            $hargaSnapshot = ($index < 2) ? 0 : $top->harga_toping;
-            
-            $processedToppings[] = [
-                'id_toping' => $top->id_toping,
-                'nama_toping' => $top->nama_toping,
-                'harga_snapshot' => $hargaSnapshot
-            ];
-            
-            $toppingTotalHarga += $hargaSnapshot;
-        }
+    // LOGIKA PROMO: Maksimal 2 topping ber-flag bisa_gratis=1 dengan harga PALING MURAH digratiskan
+    // Topping bisa_gratis=0 atau topping yang lebih mahal → TETAP BERBAYAR
+    $freeEligibleIds = $selectedToppings
+        ->filter(fn($t) => (bool) $t->bisa_gratis)
+        ->sortBy(fn($t) => (float) $t->harga_toping)
+        ->take(2)
+        ->pluck('id_toping')
+        ->toArray();
+
+    foreach ($selectedToppings as $top) {
+        $isFree = in_array($top->id_toping, $freeEligibleIds);
+        $hargaSnapshot = $isFree ? 0 : $top->harga_toping;
+
+        $processedToppings[] = [
+            'id_toping'      => $top->id_toping,
+            'nama_toping'    => $top->nama_toping,
+            'harga_snapshot' => $hargaSnapshot
+        ];
+
+        $toppingTotalHarga += $hargaSnapshot;
+    }
 
         $cart = session()->get('cart', []);
         
@@ -85,6 +103,13 @@ public function addToCart(Request $request)
         ];
 
         session()->put('cart', $cart);
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'cart' => $cart,
+                'message' => 'Menu ditambahkan!'
+            ]);
+        }
         return redirect()->route('kasir.pesan.index')->with('success', 'Menu ditambahkan!');
     }
 
@@ -98,11 +123,21 @@ public function addToCart(Request $request)
         $cart = session()->get('cart', []);
         if (empty($cart)) return response()->json(['success' => false, 'message' => 'Keranjang kosong!'], 400);
 
-        try {
-            $id = DB::transaction(function () use ($request, $cart) {
-                $totalAwal = array_sum(array_column($cart, 'subtotal'));
-                $uangTunai = $request->uang_tunai ?? $totalAwal;
+        $totalAwal = array_sum(array_column($cart, 'subtotal'));
+        $metode = strtolower($request->jenis_pembayaran);
+        $isCash = in_array($metode, ['cash', 'tunai']);
+        $uangTunai = $request->filled('uang_tunai') ? (float)$request->uang_tunai : ($isCash ? 0 : $totalAwal);
 
+        // Validasi Pembayaran Tunai: Uang tunai tidak boleh kurang dari total belanja
+        if ($isCash && $uangTunai < $totalAwal) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Uang tunai (Rp ' . number_format($uangTunai, 0, ',', '.') . ') kurang dari total bayar (Rp ' . number_format($totalAwal, 0, ',', '.') . ')!'
+            ], 422);
+        }
+
+        try {
+            $id = DB::transaction(function () use ($request, $cart, $totalAwal, $metode, $uangTunai) {
                 // 1. Simpan Header Penjualan
                 $penjualanId = DB::table('tb_penjualan')->insertGetId([
                     'id_cabang'         => Auth::user()->id_cabang ?? 1,
@@ -110,9 +145,9 @@ public function addToCart(Request $request)
                     'nama_pelanggan'    => $request->nama_pelanggan,
                     'total_awal'        => $totalAwal,
                     'total_bayar'       => $totalAwal,
-                    'metode_pembayaran' => strtolower($request->jenis_pembayaran),
+                    'metode_pembayaran' => $metode,
                     'uang_tunai'        => $uangTunai,
-                    'kembalian'         => $uangTunai - $totalAwal,
+                    'kembalian'         => max(0, $uangTunai - $totalAwal),
                     'status_transaksi'  => 'berhasil',
                     'created_at'        => now(),
                     'updated_at'        => now(),
@@ -150,29 +185,36 @@ public function addToCart(Request $request)
                 'success' => true, 
                 'id_penjualan' => $id
             ]);
-} catch (\Exception $e) {
+        } catch (\Exception $e) {
             // Catat error di file log (storage/logs/laravel.log)
             \Illuminate\Support\Facades\Log::error('Checkout Gagal: ' . $e->getMessage());
 
-            // Tampilkan error langsung di layar menggunakan dd() sementara
-            dd('ERROR CHECKOUT: ', $e->getMessage(), 'Di Baris: ' . $e->getLine());
-            
-            // return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 
-    public function riwayat()
+    public function riwayat(Request $request)
     {
         $id_cabang = Auth::user()->id_cabang;
-        $today = now()->toDateString();
+        $today = now()->timezone('Asia/Jakarta')->toDateString();
 
         // Get today's successful orders for this branch, ordered by creation time
-        $orders = DB::table('tb_penjualan')
+        $query = DB::table('tb_penjualan')
             ->leftJoin('tb_user', 'tb_penjualan.id_user', '=', 'tb_user.id_user')
             ->where('tb_penjualan.id_cabang', $id_cabang)
             ->where('tb_penjualan.status_transaksi', 'berhasil')
-            ->whereDate('tb_penjualan.created_at', $today)
-            ->select(
+            ->whereDate('tb_penjualan.created_at', $today);
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('tb_penjualan.nama_pelanggan', 'like', "%{$search}%")
+                  ->orWhere('tb_penjualan.metode_pembayaran', 'like', "%{$search}%")
+                  ->orWhere('tb_user.name', 'like', "%{$search}%");
+            });
+        }
+
+        $orders = $query->select(
                 'tb_penjualan.*',
                 'tb_user.name as nama_kasir'
             )
@@ -187,7 +229,106 @@ public function addToCart(Request $request)
         return view('kasir.riwayat.index', compact('orders'));
     }
 
-    public function deleteOrder($id)
+    public function exportExcel()
+    {
+        $id_cabang = Auth::user()->id_cabang;
+        $today = now()->timezone('Asia/Jakarta')->toDateString();
+
+        $cabang = DB::table('tb_cabang')->where('id_cabang', $id_cabang)->first();
+        $namaCabang = $cabang ? str_replace(' ', '_', $cabang->nama_cabang) : 'Cabang';
+
+        $orders = DB::table('tb_penjualan')
+            ->leftJoin('tb_user', 'tb_penjualan.id_user', '=', 'tb_user.id_user')
+            ->where('tb_penjualan.id_cabang', $id_cabang)
+            ->where('tb_penjualan.status_transaksi', 'berhasil')
+            ->whereDate('tb_penjualan.created_at', $today)
+            ->select(
+                'tb_penjualan.*',
+                'tb_user.name as nama_kasir'
+            )
+            ->orderBy('tb_penjualan.created_at', 'asc')
+            ->get();
+
+        $filename = "Riwayat_Transaksi_{$namaCabang}_{$today}.csv";
+
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
+        ];
+
+        $callback = function () use ($orders, $cabang) {
+            $handle = fopen('php://output', 'w');
+            // Write UTF-8 BOM so MS Excel opens without encoding issues
+            fputs($handle, "\xEF\xBB\xBF");
+
+            // CSV Column Headers
+            fputcsv($handle, [
+                'No',
+                'No. Struk',
+                'Waktu',
+                'Pelanggan',
+                'Metode Pembayaran',
+                'Total Bayar (Rp)',
+                'Uang Tunai (Rp)',
+                'Kembalian (Rp)',
+                'Kasir',
+                'Cabang'
+            ]);
+
+            foreach ($orders as $index => $order) {
+                $noUrut = $index + 1;
+                $noStruk = 'SHJ-' . date('dmy', strtotime($order->created_at)) . '-' . str_pad($noUrut, 3, '0', STR_PAD_LEFT);
+                fputcsv($handle, [
+                    $noUrut,
+                    $noStruk,
+                    date('H:i:s', strtotime($order->created_at)),
+                    $order->nama_pelanggan,
+                    strtoupper($order->metode_pembayaran),
+                    (int) $order->total_bayar,
+                    (int) ($order->uang_tunai ?? $order->total_bayar),
+                    (int) ($order->kembalian ?? 0),
+                    $order->nama_kasir ?? '-',
+                    $cabang->nama_cabang ?? '-'
+                ]);
+            }
+
+            fclose($handle);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function exportPdf()
+    {
+        $id_cabang = Auth::user()->id_cabang;
+        $today = now()->timezone('Asia/Jakarta')->toDateString();
+
+        $cabang = DB::table('tb_cabang')->where('id_cabang', $id_cabang)->first();
+
+        $orders = DB::table('tb_penjualan')
+            ->leftJoin('tb_user', 'tb_penjualan.id_user', '=', 'tb_user.id_user')
+            ->where('tb_penjualan.id_cabang', $id_cabang)
+            ->where('tb_penjualan.status_transaksi', 'berhasil')
+            ->whereDate('tb_penjualan.created_at', $today)
+            ->select(
+                'tb_penjualan.*',
+                'tb_user.name as nama_kasir'
+            )
+            ->orderBy('tb_penjualan.created_at', 'asc')
+            ->get();
+
+        foreach ($orders as $index => $order) {
+            $order->no_urut = $index + 1;
+            $order->no_struk = 'SHJ-' . date('dmy', strtotime($order->created_at)) . '-' . str_pad($order->no_urut, 3, '0', STR_PAD_LEFT);
+        }
+
+        return view('kasir.riwayat.pdf', compact('orders', 'cabang', 'today'));
+    }
+
+    public function deleteOrder(Request $request, $id)
     {
         $id_cabang = Auth::user()->id_cabang;
 
@@ -202,7 +343,30 @@ public function addToCart(Request $request)
             return redirect()->route('kasir.riwayat.index')->with('error', 'Pesanan tidak ditemukan!');
         }
 
-        // Mark as failed instead of deleting (audit trail)
+        // Hitung nomor urut struk untuk pencatatan
+        $today = date('Y-m-d', strtotime($order->created_at));
+        $noUrut = DB::table('tb_penjualan')
+            ->where('id_cabang', $id_cabang)
+            ->where('status_transaksi', 'berhasil')
+            ->whereDate('created_at', $today)
+            ->where('created_at', '<=', $order->created_at)
+            ->count();
+        $noStruk = 'SHJ-' . date('dmy', strtotime($order->created_at)) . '-' . str_pad($noUrut, 3, '0', STR_PAD_LEFT);
+
+        // 1. Simpan ke Riwayat Penghapusan (Audit Log)
+        DB::table('tb_deletion_log')->insert([
+            'id_penjualan'   => $order->id_penjualan,
+            'id_user'        => Auth::id(),
+            'id_cabang'      => $id_cabang,
+            'no_struk'       => $noStruk,
+            'nama_pelanggan' => $order->nama_pelanggan,
+            'total_bayar'    => $order->total_bayar,
+            'alasan'         => $request->input('alasan', 'Pesanan dibatalkan/dihapus oleh Kasir'),
+            'created_at'     => now(),
+            'updated_at'     => now(),
+        ]);
+
+        // 2. Mark as failed instead of deleting (audit trail: data tidak hilang)
         DB::table('tb_penjualan')
             ->where('id_penjualan', $id)
             ->update([
@@ -210,16 +374,23 @@ public function addToCart(Request $request)
                 'updated_at' => now(),
             ]);
 
-        return redirect()->route('kasir.riwayat.index')->with('success', 'Pesanan berhasil dihapus!');
+        return redirect()->route('kasir.riwayat.index')->with('success', 'Pesanan berhasil dihapus dan dicatat di riwayat audit!');
     }
 
     public function printStruk($id)
     {
-        $penjualan = DB::table('tb_penjualan')
+        $user = Auth::user();
+        $query = DB::table('tb_penjualan')
             ->leftJoin('tb_user', 'tb_penjualan.id_user', '=', 'tb_user.id_user')
             ->leftJoin('tb_cabang', 'tb_penjualan.id_cabang', '=', 'tb_cabang.id_cabang')
-            ->where('tb_penjualan.id_penjualan', $id)
-            ->select(
+            ->where('tb_penjualan.id_penjualan', $id);
+
+        // Isolasi multi-cabang: Kasir hanya boleh mencetak struk dari cabangnya sendiri
+        if ($user && $user->role !== 'admin') {
+            $query->where('tb_penjualan.id_cabang', $user->id_cabang);
+        }
+
+        $penjualan = $query->select(
                 'tb_penjualan.*', 
                 'tb_user.name as nama_kasir', 
                 'tb_cabang.nama_cabang', 
@@ -228,7 +399,7 @@ public function addToCart(Request $request)
             ->first();
 
         if (!$penjualan) {
-            return "Gagal: ID $id tidak ditemukan.";
+            abort(403, 'Akses Ditolak: Struk tidak ditemukan atau Anda tidak memiliki akses ke cabang ini.');
         }
 
         // Calculate daily sequential number for this receipt
@@ -257,18 +428,27 @@ public function addToCart(Request $request)
         return view('kasir.pesan.struk', compact('penjualan', 'details')); 
     }
 
-    public function removeCart($index)
+    public function removeCart(Request $request, $index)
     {
         $cart = session()->get('cart', []);
         if (isset($cart[$index])) {
             unset($cart[$index]);
-            session()->put('cart', array_values($cart));
+            $cart = array_values($cart);
+            session()->put('cart', $cart);
+        }
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'cart' => $cart,
+                'message' => 'Menu dihapus dari keranjang'
+            ]);
         }
         return back();
     }
-    public function updateQty($index, $action)
+    public function updateQty(Request $request, $index, $action)
 {
     $cart = session()->get('cart', []);
+    $message = '';
 
     if (isset($cart[$index])) {
         // 1. Update Quantity
@@ -281,12 +461,20 @@ public function addToCart(Request $request)
         // 2. Jika Qty menjadi 0 atau kurang, hapus item dari keranjang
         if ($cart[$index]['qty'] < 1) {
             unset($cart[$index]);
-            session()->put('cart', array_values($cart));
+            $cart = array_values($cart);
+            session()->put('cart', $cart);
+            
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'cart' => $cart,
+                    'message' => 'Menu dihapus dari keranjang'
+                ]);
+            }
             return redirect()->back()->with('success', 'Menu dihapus dari keranjang');
         }
 
         // 3. Hitung Ulang Subtotal untuk item ini
-        // Kita hitung ulang karena subtotal = (Harga Menu + Total Harga Topping) * Qty
         $toppingTotalHarga = 0;
         foreach ($cart[$index]['toppings'] as $top) {
             $toppingTotalHarga += $top['harga_snapshot'];
@@ -296,9 +484,30 @@ public function addToCart(Request $request)
 
         // 4. Simpan kembali ke session
         session()->put('cart', $cart);
+        $message = 'Jumlah pesanan diperbarui';
+    }
+
+    if ($request->wantsJson()) {
+        return response()->json([
+            'success' => true,
+            'cart' => $cart,
+            'message' => $message
+        ]);
     }
 
     return redirect()->back();
 }
 
+public function clearCart(Request $request)
+{
+    session()->forget('cart');
+    if ($request->wantsJson()) {
+        return response()->json([
+            'success' => true,
+            'cart' => [],
+            'message' => 'Keranjang pesanan berhasil dibersihkan!'
+        ]);
+    }
+    return redirect()->route('kasir.pesan.index')->with('success', 'Keranjang dibersihkan!');
 }
+}

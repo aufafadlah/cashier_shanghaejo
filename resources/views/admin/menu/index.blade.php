@@ -2,19 +2,28 @@
 @section('title', 'Kelola Menu')
 @section('content')
 <div class="container-fluid p-4" x-data="{}"> 
-    {{-- 1. HEADER --}}
-    <div class="flex justify-between items-center mb-6">
+    {{-- 1. HEADER & SEARCH --}}
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
             <h1 class="text-2xl font-bold text-gray-800">Kelola Menu</h1>
-            <p class="text-xs text-gray-400 mt-1">Atur daftar menu makanan & minuman Anda (Many to Many)</p>
+            <p class="text-xs text-gray-400 mt-1">Atur daftar menu makanan & minuman Anda</p>
         </div>
-        <a href="{{ route('admin.menu.create') }}" class="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-xl shadow-lg hover:bg-green-700 transition-all active:scale-95">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            Add Menu
-        </a>
+        <div class="flex items-center gap-3 flex-wrap">
+            <form action="{{ route('admin.menu.index') }}" method="GET" class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari menu..." 
+                    class="bg-white border border-gray-200 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 rounded-xl pl-9 pr-8 py-2 text-xs outline-none transition shadow-sm w-56 sm:w-64">
+                @if(request('search'))
+                    <a href="{{ route('admin.menu.index') }}" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs" title="Reset">
+                        <i class="fa-solid fa-xmark"></i>
+                    </a>
+                @endif
+            </form>
+            <a href="{{ route('admin.menu.create') }}" class="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-xl shadow-lg hover:bg-green-700 transition-all active:scale-95">
+                <i class="fa-solid fa-plus mr-2 text-xs"></i>
+                Add Menu
+            </a>
+        </div>
     </div>
 
     {{-- 2. STATISTIK --}}
@@ -36,7 +45,7 @@
 
         @forelse($menus as $index => $menu)
         <tr class="hover:bg-gray-50/80 transition border-b border-gray-100">
-            <td class="px-6 py-4 text-gray-500 text-sm font-medium">{{ $index + 1 }}</td>
+            <td class="px-6 py-4 text-gray-500 text-sm font-medium">{{ $menus->firstItem() ? ($menus->firstItem() + $index) : ($index + 1) }}</td>
       
             <td class="px-6 py-4">
                 <div class="font-bold text-gray-800 text-sm">{{ $menu->nama_menu }}</div>
@@ -45,23 +54,35 @@
                 </span>
             </td>
             
-            {{-- Distribusi Cabang & Harga Menggunakan Badge Mewah --}}
+            {{-- Distribusi Cabang & Harga --}}
             <td class="px-6 py-4">
                 <div class="flex flex-wrap gap-2">
-                    @forelse($menu->cabangs as $cabang)
-                        <div class="inline-flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg p-1.5 pr-2.5 shadow-sm">
-                            {{-- Indikator Status Aktif Menu di Cabang --}}
-                            <span class="w-2 h-2 rounded-full {{ $cabang->pivot->is_active ? 'bg-green-500' : 'bg-gray-300' }}"></span>
-                            
-                            {{-- Nama Cabang --}}
-                            <span class="text-xs font-semibold text-gray-700">{{ $cabang->nama_cabang }}:</span>
-                            
-                            {{-- Harga Spesifik Cabang --}}
-                            <span class="text-xs font-bold text-gray-900">Rp{{ number_format($cabang->pivot->harga_menu, 0, ',', '.') }}</span>
+                    @php
+                        $assignedBranchIds = $menu->cabangs->where('pivot.is_active', true)->pluck('id_cabang')->toArray();
+                        $hasUnassigned = $branches->whereNotIn('id_cabang', $assignedBranchIds)->count() > 0;
+                    @endphp
+                    @foreach($branches as $cabang)
+                        @php
+                            $pivotRow = $menu->cabangs->where('id_cabang', $cabang->id_cabang)->first();
+                            $isActive = $pivotRow && $pivotRow->pivot->is_active;
+                            $harga = $pivotRow ? $pivotRow->pivot->harga_menu : null;
+                        @endphp
+                        <div class="inline-flex items-center gap-1.5 rounded-lg p-1.5 pr-2.5 border shadow-sm
+                            {{ $isActive ? 'bg-white border-gray-200' : 'bg-red-50 border-red-200' }}">
+                            <span class="w-2 h-2 rounded-full {{ $isActive ? 'bg-green-500' : 'bg-red-400' }}"></span>
+                            <span class="text-xs font-semibold {{ $isActive ? 'text-gray-700' : 'text-red-600' }}">
+                                {{ $cabang->nama_cabang }}:
+                            </span>
+                            @if($isActive)
+                                <span class="text-xs font-bold text-gray-900">Rp{{ number_format($harga, 0, ',', '.') }}</span>
+                            @else
+                                <span class="text-[10px] font-bold text-red-400 uppercase">Belum Aktif</span>
+                            @endif
                         </div>
-                    @empty
-                        <span class="text-xs italic text-gray-400">Belum didistribusikan ke cabang manapun.</span>
-                    @endforelse
+                    @endforeach
+                    @if($branches->isEmpty())
+                        <span class="text-xs italic text-gray-400">Belum ada cabang terdaftar.</span>
+                    @endif
                 </div>
             </td>
             
@@ -71,7 +92,7 @@
                     {{-- Edit --}}
                     <a href="{{ route('admin.menu.edit', $menu->id_menu) }}" 
                        class="inline-flex items-center px-3 py-1.5 bg-amber-50 text-amber-600 text-xs font-bold rounded-lg hover:bg-amber-100 transition border border-amber-100">
-                        Edit
+                        <i class="fa-solid fa-pen-to-square mr-1.5"></i> Edit
                     </a>
                     
                     {{-- Hapus --}}
@@ -79,7 +100,7 @@
                         type="button"
                         @click="$dispatch('open-modal-hapus-{{ $menu->id_menu }}')"
                         class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 text-xs font-bold rounded-lg hover:bg-red-100 transition border border-red-100">
-                        Hapus
+                        <i class="fa-solid fa-trash-can mr-1.5"></i> Hapus
                     </button>
                 </div>
             </td>
@@ -87,10 +108,17 @@
         @empty
         <tr>
             <td colspan="4" class="text-center py-12 text-gray-400 font-medium text-sm">
+                <i class="fa-solid fa-utensils text-3xl mb-2 text-gray-300 block"></i>
                 Belum ada data menu tersedia.
             </td>
         </tr>
         @endforelse
+
+        @if($menus->hasPages())
+            <x-slot name="pagination">
+                {{ $menus->links() }}
+            </x-slot>
+        @endif
     </x-table>
 </div>
 
@@ -104,21 +132,6 @@
 @endforeach
 
 @push('scripts')
-<script>
-    // Pastikan DOM siap, lalu panggil dengan objek penanda window. agar terhubung ke file toast global
-    document.addEventListener("DOMContentLoaded", function() {
-        @if(session('success'))
-            if (typeof window.showToast === 'function') {
-                window.showToast("{{ session('success') }}", 'success');
-            }
-        @endif
-        
-        @if(session('error'))
-            if (typeof window.showToast === 'function') {
-                window.showToast("{{ session('error') }}", 'error');
-            }
-        @endif
-    });
-</script>
+
 @endpush
 @endsection

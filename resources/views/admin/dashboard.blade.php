@@ -2,7 +2,7 @@
 @section('title', 'Dashboard')
 
 @section('content')
-<div class="space-y-8">
+<div class="space-y-8 p-4">
     
     {{-- 1. Stats Grid --}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -28,7 +28,7 @@
                 </div>
             </div>
             <div id="chart-harian" class="min-h-[220px]"></div>
-            <p class="text-[10px] text-gray-400 mt-2 pt-2 border-t border-gray-100">Grafik Penjualan Per Jam — Hari Ini</p>
+            <p class="text-[10px] text-gray-400 mt-2 pt-2 border-t border-gray-100">Grafik Penjualan Per Hari — Minggu Ini</p>
         </div>
 
         {{-- Grafik Metode Pembayaran (ApexCharts donut) --}}
@@ -53,14 +53,43 @@
                 </div>
             </div>
         </div>
-
     </div>
 
-    {{-- 3. Bottom Section (Tabel Transaksi Terbaru & Progress Target Menu) --}}
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    {{-- 2b. Distribusi Penjualan per Cabang (Hari Ini) --}}
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div class="flex justify-between items-center mb-4">
+            <div>
+                <h3 class="font-bold text-gray-700 text-xs uppercase tracking-widest mb-0.5">Distribusi Penjualan per Cabang</h3>
+                <p class="text-[10px] text-gray-400">Hari Ini{{ $selectedCabang ? ' — Cabang Terpilih' : ' — Semua Cabang' }}</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+            <div id="donut-cabang" class=""></div>
+            <div class="space-y-2">
+                @forelse($cabangBreakdown as $cb)
+                @php
+                    $totalCabangPct = $cabangBreakdown->sum('total') > 0 ? round(($cb->total / $cabangBreakdown->sum('total')) * 100) : 0;
+                @endphp
+                <div class="flex items-center justify-between p-2.5 rounded-xl bg-gray-50 border border-gray-100">
+                    <span class="text-xs font-bold text-gray-700 truncate">{{ Str::title($cb->nama_cabang) }}</span>
+                    <div class="text-right ml-2 shrink-0">
+                        <span class="text-xs font-black text-gray-800">Rp {{ number_format($cb->total, 0, ',', '.') }}</span>
+                        <span class="text-[10px] text-gray-400 ml-1">({{ $totalCabangPct }}%)</span>
+                    </div>
+                </div>
+                @empty
+                <div class="text-center py-6 text-sm text-gray-400 italic">Belum ada transaksi hari ini.</div>
+                @endforelse
+            </div>
+        </div>
+    </div>
+
+
+    {{-- 3. Bottom Section (Tabel Transaksi Terbaru) --}}
+    <div class="grid grid-cols-1 gap-8">
         
-        {{-- Tabel Transaksi Terbaru (Kiri) --}}
-        <div class="lg:col-span-2">
+        {{-- Tabel Transaksi Terbaru --}}
+        <div>
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden h-full">
                 <div class="p-5 border-b border-gray-50 flex justify-between items-center">
                     <h3 class="font-bold text-gray-700 text-xs uppercase tracking-widest">Transaksi Terbaru</h3>
@@ -107,37 +136,14 @@
             </div>
         </div>
 
-        {{-- Progress Target Menu --}}
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-full">
-            <div class="pb-4 mb-4 border-b border-gray-50">
-                <h3 class="font-bold text-gray-700 text-xs uppercase tracking-widest mb-0.5">Target Menu Terjual</h3>
-                <p class="text-[10px] text-gray-400">Hari Ini</p>
-            </div>
-            <div class="space-y-4 overflow-y-auto">
-                @forelse($targetMenu ?? [] as $target)
-                <div class="space-y-1.5">
-                    <div class="flex justify-between items-center text-sm">
-                        <span class="font-bold text-gray-700">{{ $target->nama_menu }}</span>
-                        <span class="text-xs font-semibold text-gray-400">{{ $target->terjual }} / {{ $target->stok_target }} porsi</span>
-                    </div>
-                    <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                        <div class="bg-teal-600 h-full rounded-full transition-all duration-500" style="width: {{ min($target->persen, 100) }}%"></div>
-                    </div>
-                    <div class="text-right">
-                        <span class="text-[10px] font-black text-teal-600">{{ $target->persen }}% Tercapai</span>
-                    </div>
-                </div>
-                @empty
-                <div class="text-center py-8 text-sm text-gray-400 italic">Tidak ada target menu untuk hari ini.</div>
-                @endforelse
-            </div>
-        </div>
+
         
     </div>
 </div>
 @endsection
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
 (function () {
     const COLORS = { bar: '#0d9460c5', line: '#21b09aff', donut1: '#0d9488', donut2: '#5eead4' };
@@ -201,15 +207,19 @@
         }).render();
     }
 
-    // ── HARIAN PENJUALAN ──
+    // ── HARIAN PENJUALAN (sekarang Mingguan) ──
     var rawH = @json($grafikData);
     var mapH = {};
-    rawH.forEach(function(d){ mapH[parseInt(d.jam)] = d; });
-    var hours = Array.from({length:24}, function(_,i){ return i; });
+    rawH.forEach(function(d){
+        // dow: 2=Sen,3=Sel,4=Rab,5=Kam,6=Jum,7=Sab,1=Min → index 0..6
+        var idx = d.dow === 1 ? 6 : d.dow - 2;
+        mapH[idx] = d;
+    });
+    var dayLabels = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
     barLine('chart-harian',
-        hours.map(function(h){ return String(h).padStart(2,'0')+':00'; }),
-        hours.map(function(h){ return parseFloat((mapH[h]||{}).total_pendapatan||0); }),
-        hours.map(function(h){ return parseInt((mapH[h]||{}).total_transaksi||0); })
+        dayLabels,
+        dayLabels.map(function(_, i){ return parseFloat((mapH[i]||{}).total_pendapatan||0); }),
+        dayLabels.map(function(_, i){ return parseInt((mapH[i]||{}).total_transaksi||0); })
     );
 
     donut('donut-harian',
@@ -217,6 +227,35 @@
         {{ $metodePembayaran['QRIS'] ?? 0 }},
         {{ $metodePembayaran['Cash'] ?? 0 }}
     );
+
+    // ── DISTRIBUSI PER CABANG ──
+    var cabangRaw = @json($cabangBreakdown);
+    var cabangEl  = document.getElementById('donut-cabang');
+    if (cabangEl && cabangRaw.length > 0) {
+        var cabangLabels = cabangRaw.map(function(c){ return c.nama_cabang ? c.nama_cabang.charAt(0).toUpperCase() + c.nama_cabang.slice(1) : '?'; });
+        var cabangValues = cabangRaw.map(function(c){ return parseFloat(c.total) || 0; });
+        var palette = ['#0d9488','#5eead4','#0f766e','#99f6e4','#134e4a','#14b8a6'];
+        var totalCabang = cabangValues.reduce(function(a,b){ return a+b; }, 0);
+        new ApexCharts(cabangEl, {
+            series: cabangValues,
+            labels: cabangLabels,
+            chart: { type: 'donut', height: 200, toolbar: { show: false }, fontFamily: 'inherit' },
+            colors: palette,
+            plotOptions: { pie: { donut: { size: '65%', labels: { show: true,
+                name:  { show: true, fontSize: '10px', color: '#9CA3AF' },
+                value: { show: true, fontSize: '14px', fontWeight: 700, color: '#111827',
+                         formatter: function(v){ return 'Rp '+(parseFloat(v)/1000).toFixed(0)+'K'; } },
+                total: { show: true, label: 'Total', fontSize: '10px', color: '#9CA3AF',
+                         formatter: function(){ return 'Rp '+(totalCabang/1000000).toFixed(1)+'M'; } },
+            }}}},
+            dataLabels: { enabled: false },
+            legend: { show: false },
+            stroke: { width: 2, colors: ['#fff'] },
+            tooltip: { y: { formatter: function(v){ return 'Rp '+Number(v).toLocaleString('id-ID'); } } },
+        }).render();
+    } else if (cabangEl) {
+        cabangEl.innerHTML = '<div class="flex items-center justify-center h-48 text-sm text-gray-400 italic">Belum ada transaksi hari ini.</div>';
+    }
 })();
 </script>
 @endpush

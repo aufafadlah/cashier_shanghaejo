@@ -39,9 +39,11 @@
             {{-- 4. Harga Satuan --}}
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Harga Satuan</label>
-                <input type="number" name="harga_satuan" id="harga_satuan" placeholder="Rp" required 
-                class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-100 focus:border-green-400 outline-none transition-all">
-
+                <div class="relative mt-1">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-semibold">Rp</span>
+                    <input type="text" inputmode="numeric" name="harga_satuan" id="harga_satuan" placeholder="0" required 
+                    class="input-currency w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-100 focus:border-green-400 outline-none transition-all">
+                </div>
             </div>
 
             {{-- 5. Qty --}}

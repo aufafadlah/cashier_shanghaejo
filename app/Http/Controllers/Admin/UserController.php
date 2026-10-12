@@ -10,13 +10,25 @@ use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
-public function index() {
-    // Menggunakan with() untuk Eager Loading relasi cabang
-    $users = User::with('cabang')->filterCabang()->get();
+public function index(Request $request) {
+    $baseQuery = User::filterCabang();
 
-    $totalUsers = $users->count();
-    $aktif      = $users->where('is_active', 1)->count();
-    $nonAktif   = $users->where('is_active', 0)->count();
+    $totalUsers = (clone $baseQuery)->count();
+    $aktif      = (clone $baseQuery)->where('is_active', 1)->count();
+    $nonAktif   = (clone $baseQuery)->where('is_active', 0)->count();
+
+    $query = User::with('cabang')->filterCabang()->orderBy('id_user', 'desc');
+
+    if ($request->filled('search')) {
+        $search = $request->input('search');
+        $query->where(function ($q) use ($search) {
+            $q->where('name', 'like', "%{$search}%")
+              ->orWhere('username', 'like', "%{$search}%")
+              ->orWhere('role', 'like', "%{$search}%");
+        });
+    }
+
+    $users = $query->paginate(10)->withQueryString();
 
     return view('admin.user.index', compact('users', 'totalUsers', 'aktif', 'nonAktif'));
 }
@@ -37,6 +49,15 @@ public function index() {
             'role'      => 'required|in:admin,kasir',
             'is_active' => 'required|in:0,1',
         ]);
+
+        // Multi-Branch Validation:
+        // Jika Admin sedang memfilter cabang tertentu di session, namun mencoba menginput/assign user ke cabang lain
+        $adminCabangFilter = session('admin_cabang_filter');
+        if ($adminCabangFilter && $adminCabangFilter != $request->id_cabang) {
+            $targetCabang = DB::table('tb_cabang')->where('id_cabang', $request->id_cabang)->first();
+            $namaCabang = $targetCabang ? $targetCabang->nama_cabang : 'cabang tersebut';
+            return redirect()->back()->withInput()->with('error', "Anda harus mengganti cabang ke {$namaCabang} terlebih dahulu");
+        }
 
         DB::table('tb_user')->insert([
             'id_cabang'  => $request->id_cabang,
@@ -74,6 +95,15 @@ public function index() {
             'is_active' => 'required|in:0,1',
         ]);
 
+        // Multi-Branch Validation:
+        // Jika Admin sedang memfilter cabang tertentu di session, namun mencoba update user ke cabang lain
+        $adminCabangFilter = session('admin_cabang_filter');
+        if ($adminCabangFilter && $adminCabangFilter != $request->id_cabang) {
+            $targetCabang = DB::table('tb_cabang')->where('id_cabang', $request->id_cabang)->first();
+            $namaCabang = $targetCabang ? $targetCabang->nama_cabang : 'cabang tersebut';
+            return redirect()->back()->withInput()->with('error', "Anda harus mengganti cabang ke {$namaCabang} terlebih dahulu");
+        }
+
         $data = [
             'id_cabang'  => $request->id_cabang,
             'name'       => $request->name,
@@ -94,20 +124,29 @@ public function index() {
 
     public function destroy($id)
     {
+        $user = User::findOrFail($id);
+
         // ✅ tidak bisa hapus akun sendiri
-        if ($id == Auth::user()->id_user) {
+        if ($id == Auth::id()) {
             return redirect()->route('admin.user.index')
-                ->with('error', 'Tidak bisa menghapus akun sendiri!');
+                ->with('error', 'Tidak dapat menghapus user: tidak bisa menghapus akun sendiri!');
         }
 
-        // ✅ tidak bisa hapus user yang masih punya transaksi
-        $adaTransaksi = DB::table('tb_penjualan')->where('id_user', $id)->exists();
-        if ($adaTransaksi) {
+        // ✅ tidak bisa hapus user yang masih aktif (harus dinonaktifkan dulu)
+        if ($user->is_active) {
             return redirect()->route('admin.user.index')
-                ->with('error', 'User tidak bisa dihapus karena masih memiliki data transaksi!');
+                ->with('error', 'tidak dapat menghapus user : masih berstatus aktif');
         }
 
-        DB::table('tb_user')->where('id_user', $id)->delete();
-        return redirect()->route('admin.user.index')->with('success', 'User telah dihapus!');
+        // ✅ Cek Penjualan (Kritis untuk audit trail)
+        if (\App\Models\Penjualan::query()->where('id_user', $id)->exists()) {
+            return redirect()->route('admin.user.index')
+                ->with('error', 'Tidak dapat menghapus user: masih ada data transaksi terhubung!');
+        }
+
+        // 3. Hapus
+        $user->delete();
+
+        return redirect()->route('admin.user.index')->with('success', 'User telah berhasil dihapus!');
     }
 }

@@ -41,17 +41,24 @@ class ProfileController extends Controller
 
     public function updatePassword(Request $request)
     {
-        // ✅ validasi password lama sebelum ganti
-        $request->validate([
-            'current_password' => 'required',
-            'password'         => 'required|min:8|confirmed',
-        ]);
-
         $user = Auth::user();
 
-        // ✅ cek password lama cocok atau tidak
-        if (!Hash::check($request->current_password, $user->password)) {
-            return back()->with('error', 'Password lama tidak cocok!');
+        // Kasir: tidak perlu password lama (lebih simple)
+        // Admin: wajib memasukkan password lama untuk keamanan
+        if ($user->role === 'admin') {
+            $request->validate([
+                'current_password' => 'required',
+                'password'         => 'required|min:6|confirmed',
+            ]);
+
+            if (!Hash::check($request->current_password, $user->password)) {
+                return back()->with('error', 'Password lama tidak cocok!');
+            }
+        } else {
+            // Kasir
+            $request->validate([
+                'password' => 'required|min:6|confirmed',
+            ]);
         }
 
         $user->update([

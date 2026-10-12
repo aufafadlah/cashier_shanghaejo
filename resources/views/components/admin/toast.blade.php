@@ -1,3 +1,5 @@
+<div id="notif-container" class="fixed top-5 right-5 z-[99999] flex flex-col gap-3"></div>
+
 <script>
 // Buat fungsi menempel ke scope global window agar bisa dipanggil dari partial view mana saja
 window.showToast = function(message, type = 'success') {

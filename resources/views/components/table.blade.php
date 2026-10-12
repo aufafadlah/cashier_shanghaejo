@@ -11,6 +11,11 @@
             </tbody>
         </table>
     </div>
+    @if(isset($pagination) || isset($footer))
+        <div class="px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+            {{ $pagination ?? $footer }}
+        </div>
+    @endif
 </div>
 
 <style>

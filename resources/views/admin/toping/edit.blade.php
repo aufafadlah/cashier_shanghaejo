@@ -20,21 +20,40 @@
     {{-- Harga --}}
     <div>
         <label class="text-sm font-medium text-gray-700">Harga Topping (Rp)</label>
-        <input type="number" name="harga_toping" 
-            value="{{ old('harga_menu', $toping->harga_toping) }}"
-            class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-100 focus:border-green-400 outline-none transition-all"
-            placeholder="0"
-            required>
+        <div class="relative mt-1">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-semibold">Rp</span>
+            <input type="text"
+                inputmode="numeric"
+                name="harga_toping" 
+                value="{{ old('harga_toping', (int) $toping->harga_toping) }}"
+                class="input-currency w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-100 focus:border-green-400 outline-none transition-all"
+                placeholder="0"
+                required>
+        </div>
     </div>
 
     {{-- Status --}}
     <div>
         <label class="text-sm font-medium text-gray-700">Status Ketersediaan</label>
-        <select name="is_active" 
+        <select name="is_active"
             class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-100 focus:border-green-400 outline-none transition-all">
             <option value="1" {{ old('is_active', $toping->is_active) == 1 ? 'selected' : '' }}>Tersedia (Aktif)</option>
             <option value="0" {{ old('is_active', $toping->is_active) == 0 ? 'selected' : '' }}>Habis (Non-Aktif)</option>
         </select>
+    </div>
+
+    {{-- Bisa Gratis --}}
+    <div>
+        <label class="text-sm font-medium text-gray-700 flex items-center gap-1">
+            Bisa Masuk Promo Gratis
+            <span class="text-[10px] font-normal text-gray-400">(2 topping gratis pertama)</span>
+        </label>
+        <select name="bisa_gratis"
+            class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-100 focus:border-green-400 outline-none transition-all">
+            <option value="1" {{ old('bisa_gratis', $toping->bisa_gratis ?? 1) == 1 ? 'selected' : '' }}>Bisa Gratis (Masuk Promo)</option>
+            <option value="0" {{ old('bisa_gratis', $toping->bisa_gratis ?? 1) == 0 ? 'selected' : '' }}>Selalu Berbayar (Tidak Masuk Promo)</option>
+        </select>
+        <p class="text-[10px] text-gray-400 mt-1">Jika "Selalu Berbayar", topping ini tidak akan digratiskan meskipun ada promo.</p>
     </div>
 </x-modal-form>
 @endsection

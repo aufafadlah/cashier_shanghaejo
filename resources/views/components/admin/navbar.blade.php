@@ -1,5 +1,8 @@
-<header class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-8 fixed top-0 right-0 left-0 md:left-64 z-30 shadow-sm transition-all">
-    <div class="flex items-center gap-4">
+<header class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 sm:px-8 fixed top-0 right-0 left-0 lg:left-64 z-30 shadow-sm transition-all">
+    <div class="flex items-center gap-2">
+        <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden text-gray-600 focus:outline-none p-1 mr-1 hover:text-teal-600 transition-colors">
+            <i class="fa-solid fa-bars text-lg"></i>
+        </button>
         <nav class="flex items-center text-sm font-medium text-gray-400">
             <span class="hover:text-teal-600">Admin</span>
             <span class="mx-2 text-gray-300">/</span>
@@ -24,7 +27,8 @@
                   request()->routeIs('admin.toping.*');
     @endphp
 
-        <form action="{{ url()->current() }}" method="GET" id="filterFormNavbar">
+        <form action="{{ route('admin.set.cabang') }}" method="POST" id="filterFormNavbar">
+            @csrf
             <select name="id_cabang" 
                     onchange="this.form.submit()" 
                     {{ $isDisabled ? 'disabled' : '' }}
@@ -33,8 +37,8 @@
                 <option value="">Semua Cabang (Gabungan)</option>
                 
                 @foreach($daftarCabang ?? [] as $cabang)
-                    <option value="{{ $cabang->id_cabang }}" {{ request('id_cabang') == $cabang->id_cabang ? 'selected' : '' }}>
-                        {{ $cabang->nama_cabang }}
+                    <option value="{{ $cabang->id_cabang }}" {{ session('admin_cabang_filter') == $cabang->id_cabang ? 'selected' : '' }}>
+                        {{ $cabang->nama_cabang }} — {{ Str::limit($cabang->alamat ?? '', 15) }}
                     </option>
                 @endforeach
             </select>

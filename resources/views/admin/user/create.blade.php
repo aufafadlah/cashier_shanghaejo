@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('content')
 
@@ -41,14 +41,19 @@
             @enderror
         </div>
 
-        {{-- Password --}}
-        <div>
+        {{-- Password with Toggle --}}
+        <div x-data="{ showPass: false }">
             <label class="text-sm font-medium">Password</label>
-            <input type="password" 
-                   name="password" 
-                   placeholder="******"
-                   required {{-- WAJIB diisi saat buat user baru --}}
-                   class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-100 focus:border-green-400 outline-none transition-all">
+            <div class="relative">
+                <input :type="showPass ? 'text' : 'password'" 
+                       name="password" 
+                       placeholder="******"
+                       required
+                       class="w-full mt-1 px-3 py-2 pr-10 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-100 focus:border-green-400 outline-none transition-all">
+                <button type="button" @click="showPass = !showPass" tabindex="-1" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-teal-600 transition-colors">
+                    <i class="fa-solid" :class="showPass ? 'fa-eye-slash' : 'fa-eye'"></i>
+                </button>
+            </div>
 
             @error('password')
                 <p class="text-red-500 text-xs mt-1">{{ $message }}</p>

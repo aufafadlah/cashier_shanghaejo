@@ -29,9 +29,7 @@
         <textarea name="alamat"
                   rows="3"
                   placeholder="Masukan alamat cabang"
-                  class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-100 focus:border-green-400 outline-none transition-all">
-                  {{ old('alamat') }}</textarea>
-
+                  class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-100 focus:border-green-400 outline-none transition-all">{{ old('alamat') }}</textarea>
         @error('alamat')
             <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
         @enderror

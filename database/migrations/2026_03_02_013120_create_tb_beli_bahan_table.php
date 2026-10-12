@@ -12,19 +12,20 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('tb_beli_bahan', function (Blueprint $table) {
-    $table->id('id_pengeluaran');
-    $table->string('nama_barang');
-    $table->integer('qty');
-    $table->decimal('harga_satuan', 15, 2);
-    $table->decimal('harga_total', 15, 2);
-    $table->dateTime('tgl');
-    $table->text('keterangan')->nullable();
-    $table->string('supplier', 100)->nullable();
-    $table->timestamps();
+            $table->id('id_pengeluaran');
+            $table->unsignedBigInteger('id_cabang');
+            $table->string('nama_barang');
+            $table->integer('qty');
+            $table->decimal('harga_satuan', 15, 2);
+            $table->decimal('harga_total', 15, 2);
+            $table->dateTime('tgl');
+            $table->text('keterangan')->nullable();
+            $table->string('supplier', 100)->nullable();
+            $table->timestamps();
+            $table->softDeletes();
 
-       $table->primary(['id_cabang']);
-
-});
+            $table->index('id_cabang');
+        });
     }
 
     /**

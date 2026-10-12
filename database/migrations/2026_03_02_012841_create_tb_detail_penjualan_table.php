@@ -12,13 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('tb_detail_penjualan', function (Blueprint $table) {
-    $table->id('id_detail_penjualan');
-    $table->integer('qty');
-    $table->decimal('harga_snapshot', 15, 2);
-    $table->decimal('subtotal', 15, 2);
-   $table->primary(['id_penjualan', 'id_menu']);
-    
-});
+            $table->id('id_detail_penjualan');
+            $table->unsignedBigInteger('id_penjualan');
+            $table->unsignedBigInteger('id_menu');
+            $table->integer('qty');
+            $table->decimal('harga_snapshot', 15, 2);
+            $table->decimal('subtotal', 15, 2);
+            
+            $table->index(['id_penjualan', 'id_menu']);
+        });
     }
 
     /**

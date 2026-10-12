@@ -12,10 +12,13 @@ class Toping extends Model
     protected $fillable = [
         'nama_toping',
         'harga_toping',
-        'is_active'
-        ];
-        protected $casts = [
-        'is_active' => 'boolean'
-        ];
-        public $timestamps = true;
+        'is_active',
+        'bisa_gratis',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+        'bisa_gratis' => 'boolean',
+    ];
+    public $timestamps = false;
 }

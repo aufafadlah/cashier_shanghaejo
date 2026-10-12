@@ -37,14 +37,17 @@ class Menu extends Model
         ->withPivot('harga_menu', 'is_active')
         ->withTimestamps();
     }
-    public function cabang()
+
+    /**
+     * Filter menu berdasarkan cabang yang terdaftar di pivot branch_menu.
+     */
+    public function scopeFilterCabang($query, $branchId = null)
     {
-        return $this->belongsTo(Cabang::class, 'id_cabang', 'id_cabang');
+        $id = $branchId ?: request('id_cabang');
+        return $query->when($id, function ($q) use ($id) {
+            $q->whereHas('cabangs', function ($sub) use ($id) {
+                $sub->where('tb_cabang.id_cabang', $id);
+            });
+        });
     }
-    public function scopeFilterCabang($query)
-{
-    return $query->when(request('id_cabang'), function ($q) {
-        $q->where('id_cabang', request('id_cabang'));
-    });
-}
 }

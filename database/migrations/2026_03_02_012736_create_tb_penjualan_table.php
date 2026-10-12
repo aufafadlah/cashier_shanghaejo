@@ -11,18 +11,22 @@ return new class extends Migration
      */
     public function up(): void
     {
-       Schema::create('tb_penjualan', function (Blueprint $table) {
-    $table->id('id_penjualan');
-    $table->string('nama_pelanggan', 100)->nullable();
-    $table->decimal('total_awal', 15, 2);
-    $table->decimal('total_bayar', 15, 2);
-    $table->enum('metode_pembayaran', ['cash','qris']);
-    $table->decimal('uang_tunai', 15, 2)->nullable();
-    $table->decimal('kembalian', 15, 2)->nullable();
-    $table->enum('status_transaksi', ['berhasil','gagal']);
-    $table->timestamps();
-    $table->primary(['id_cabang', 'id_user']);
-});
+        Schema::create('tb_penjualan', function (Blueprint $table) {
+            $table->id('id_penjualan');
+            $table->unsignedBigInteger('id_cabang');
+            $table->unsignedBigInteger('id_user');
+            $table->string('nama_pelanggan', 100)->nullable();
+            $table->decimal('total_awal', 15, 2);
+            $table->decimal('total_bayar', 15, 2);
+            $table->enum('metode_pembayaran', ['cash','qris']);
+            $table->decimal('uang_tunai', 15, 2)->nullable();
+            $table->decimal('kembalian', 15, 2)->nullable();
+            $table->enum('status_transaksi', ['berhasil','gagal']);
+            $table->timestamps();
+            
+            $table->index('id_cabang');
+            $table->index('id_user');
+        });
     }
 
     /**

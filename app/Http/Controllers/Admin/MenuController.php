@@ -13,20 +13,35 @@ class MenuController extends Controller
     /**
      * Menampilkan halaman utama daftar menu beserta statistik card
      */
-    public function index()
+    public function index(Request $request)
     {
-        // 1. Ambil semua data menu beserta relasi cabangnya (Eager Loading)
-        $menus = Menu::with('cabangs')->get();
+        // 1. Ambil data menu beserta SEMUA relasi cabangnya (dengan filter search jika ada)
+        $query = Menu::with('cabangs')->orderBy('id_menu', 'desc');
 
-        // 2. Ambil data cabang murni tanpa duplikat nama
-        $branches = Cabang::all()->unique('nama_cabang');
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where('nama_menu', 'like', "%{$search}%");
+        }
 
-        // 3. Hitung statistik untuk x-card di halaman utama (TITIK KOMA SUDAH AMAN)
+        $menus = $query->paginate(10)->withQueryString();
+
+        // 2. Ambil semua cabang untuk referensi
+        $branches = Cabang::all();
+        $allCabangIds = $branches->pluck('id_cabang');
+
+        // 3. Hitung statistik
         $totalMenu = DB::table('tb_menu')->count();
-        $aktif = DB::table('branch_menu')->where('is_active', true)->count();
-        $nonAktif = DB::table('branch_menu')->where('is_active', false)->count();
+        // Hitung menu yg setidaknya aktif di 1 cabang
+        $aktif = DB::table('tb_menu')
+            ->whereExists(function($q) {
+                $q->select(DB::raw(1))
+                  ->from('branch_menu')
+                  ->whereColumn('branch_menu.menu_id', 'tb_menu.id_menu')
+                  ->where('branch_menu.is_active', true);
+            })->count();
+        $nonAktif = $totalMenu - $aktif;
 
-        // 4. Lempar semua variabel ke view index
+        // 4. Kirim ke view
         return view('admin.menu.index', compact('menus', 'branches', 'totalMenu', 'aktif', 'nonAktif'));
     }
 
@@ -35,8 +50,8 @@ class MenuController extends Controller
      */
     public function create()
     {
-        // Ambil data cabang murni dan saring agar nama ganda hilang dari form checkbox
-        $branches = Cabang::all()->unique('nama_cabang');
+        // Ambil SEMUA data cabang agar semua cabang bisa dipilih saat membuat menu
+        $branches = Cabang::orderBy('nama_cabang')->get();
         return view('admin.menu.create', compact('branches'));
     }
 
@@ -45,6 +60,14 @@ class MenuController extends Controller
      */
     public function store(Request $request)
     {
+        if ($request->has('harga_cabang') && is_array($request->harga_cabang)) {
+            $cleaned = [];
+            foreach ($request->harga_cabang as $k => $v) {
+                $cleaned[$k] = $this->cleanCurrency($v);
+            }
+            $request->merge(['harga_cabang' => $cleaned]);
+        }
+
         // Validasi bersih dari kategori_menu
         $request->validate([
             'nama_menu'    => 'required|string|max:100',
@@ -87,8 +110,8 @@ class MenuController extends Controller
             return redirect()->route('admin.menu.index')->with('error', 'Data menu tidak ditemukan!');
         }
 
-        // Saring nama cabang ganda biar tidak merusak form edit checkbox
-        $branches = Cabang::all()->unique('nama_cabang'); 
+        // Ambil SEMUA cabang agar form edit menampilkan semua pilihan
+        $branches = Cabang::orderBy('nama_cabang')->get();
 
         return view('admin.menu.edit', compact('menu', 'branches'));
     }
@@ -98,6 +121,14 @@ class MenuController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if ($request->has('harga_cabang') && is_array($request->harga_cabang)) {
+            $cleaned = [];
+            foreach ($request->harga_cabang as $k => $v) {
+                $cleaned[$k] = $this->cleanCurrency($v);
+            }
+            $request->merge(['harga_cabang' => $cleaned]);
+        }
+
         // Validasi bersih dari kategori_menu
         $request->validate([
             'nama_menu'    => 'required|string|max:100',
@@ -184,5 +215,15 @@ class MenuController extends Controller
         }
         
         return redirect()->route('admin.menu.index')->with('error', 'Menu gagal dihapus!');
+    }
+
+    private function cleanCurrency($value): int
+    {
+        if ($value === null || $value === '') return 0;
+        $val = trim((string) $value);
+        if (preg_match('/\.00$/', $val)) {
+            $val = preg_replace('/\.00$/', '', $val);
+        }
+        return (int) str_replace(['.', ','], '', $val);
     }
 }

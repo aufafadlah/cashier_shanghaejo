@@ -105,7 +105,7 @@
 <body>
 
     <div class="no-print">
-        <a href="{{ route('kasir.pesan.index') }}" class="btn btn-back">← Kembali</a>
+        <a href="{{ route('kasir.pesan.index') }}" onclick="if(window.history.length > 1) { window.history.back(); return false; }" class="btn btn-back">← Kembali</a>
         <button class="btn btn-print" onclick="window.print()">Cetak</button>
     </div>
 

@@ -3,19 +3,28 @@
 
 @section('content')
 <div class="container-fluid p-4" x-data="{}"> 
-    {{-- 1. HEADER --}}
-    <div class="flex justify-between items-center mb-6">
+    {{-- 1. HEADER & SEARCH --}}
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
             <h1 class="text-2xl font-bold text-gray-800">Kelola Cabang</h1>
             <p class="text-xs text-gray-400 mt-1">Kelola Cabang Bisnis Anda</p>
         </div>
-        <a href="{{ route('admin.cabang.create') }}" class="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-xl shadow-lg hover:bg-green-700 transition-all active:scale-95">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            Add Cabang
-        </a>
+        <div class="flex items-center gap-3 flex-wrap">
+            <form action="{{ route('admin.cabang.index') }}" method="GET" class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari cabang / alamat..." 
+                    class="bg-white border border-gray-200 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 rounded-xl pl-9 pr-8 py-2 text-xs outline-none transition shadow-sm w-56 sm:w-64">
+                @if(request('search'))
+                    <a href="{{ route('admin.cabang.index') }}" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs" title="Reset">
+                        <i class="fa-solid fa-xmark"></i>
+                    </a>
+                @endif
+            </form>
+            <a href="{{ route('admin.cabang.create') }}" class="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-xl shadow-lg hover:bg-green-700 transition-all active:scale-95">
+                <i class="fa-solid fa-plus mr-2 text-xs"></i>
+                Add Cabang
+            </a>
+        </div>
     </div>
 
     {{-- 2. STATISTIK --}}
@@ -36,9 +45,9 @@
             </tr>
         </x-slot>
 
-        @forelse($cabangs as $cabang)
+        @forelse($cabangs as $index => $cabang)
         <tr class="hover:bg-gray-50 transition border-b border-gray-100">
-            <td class="px-6 py-4 text-gray-500">{{ $loop->iteration }}</td>
+            <td class="px-6 py-4 text-gray-500">{{ $cabangs->firstItem() ? ($cabangs->firstItem() + $index) : ($index + 1) }}</td>
             <td class="px-6 py-4">
                 <div class="font-bold text-gray-800">{{ $cabang->nama_cabang }}</div>
                 <div class="text-[10px] text-gray-400 uppercase">{{ $cabang->alamat }}</div>
@@ -46,49 +55,47 @@
             <td class="px-6 py-4">
                 <x-status-badge :active="$cabang->is_active" />
             </td>
-            <td class="px-6 py-4 text-center">
-                {{-- Gunakan $event.currentTarget agar koordinat akurat --}}
-<button 
-    type="button"
-    @click="$dispatch('open-menu', { 
-        id: {{ $cabang->id_cabang }}, 
-        el: $event.currentTarget 
-    })"
-    class="p-2 w-10 h-10 rounded-lg hover:bg-gray-100 transition-colors font-bold">
-    ⋮
-</button>
+            <td class="px-6 py-4">
+                <div class="flex items-center justify-center gap-2">
+                    {{-- Detail --}}
+                    <a href="{{ route('admin.cabang.show', $cabang->id_cabang) }}" 
+                       class="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-600 text-xs font-bold rounded-lg hover:bg-blue-100 transition border border-blue-100">
+                       <i class="fa-solid fa-eye mr-1.5"></i> Detail
+                    </a>
+                    
+                    {{-- Edit --}}
+                    <a href="{{ route('admin.cabang.edit', $cabang->id_cabang) }}" 
+                       class="inline-flex items-center px-3 py-1.5 bg-amber-50 text-amber-600 text-xs font-bold rounded-lg hover:bg-amber-100 transition border border-amber-100">
+                       <i class="fa-solid fa-pen-to-square mr-1.5"></i> Edit
+                    </a>
+                    
+                    {{-- Hapus --}}
+                    <button type="button"
+                        @click="$dispatch('open-modal-hapus-{{ $cabang->id_cabang }}')"
+                        class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 text-xs font-bold rounded-lg hover:bg-red-100 transition border border-red-100">
+                        <i class="fa-solid fa-trash-can mr-1.5"></i> Hapus
+                    </button>
+                </div>
             </td>
         </tr>
         @empty
-        <tr><td colspan="4" class="text-center py-12 text-gray-400">Data tidak ditemukan.</td></tr>
+        <tr>
+            <td colspan="4" class="text-center py-12 text-gray-400">
+                <i class="fa-solid fa-store text-3xl mb-2 text-gray-300 block"></i>
+                Data tidak ditemukan.
+            </td>
+        </tr>
         @endforelse
+
+        @if($cabangs->hasPages())
+            <x-slot name="pagination">
+                {{ $cabangs->links() }}
+            </x-slot>
+        @endif
     </x-table>
 </div> {{-- Tutup container-fluid --}}
 
-{{-- DROPDOWN MENU - Ubah class-nya --}}
-<div 
-    x-data="dropdownMenu()"
-    @open-menu.window="openMenu($event.detail)"
-    @click.away="open = false"
-    x-show="open"
-    x-cloak
-    :style="`position: fixed; top: ${top}px; left: ${left}px;`"
-    class="w-44 bg-white border border-gray-100 rounded-2xl shadow-2xl z-[99999] py-2 overflow-hidden pointer-events-auto"
->
-    {{-- Tambahkan @click.stop agar klik di dalam menu tidak memicu @click.away --}}
-    <a :href="'/admin/cabang/' + id" class="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition" @click.stop>
-        <span class="mr-3 text-lg">👁️</span> Detail Cabang
-    </a>
-    <a :href="'/admin/cabang/' + id + '/edit'" class="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition" @click.stop>
-        <span class="mr-3 text-lg">✏️</span> Edit Data
-    </a>
-    <div class="border-t border-gray-50 my-1"></div>
-    <button
-        @click.stop="$dispatch('open-modal-hapus-'+id); open=false"
-        class="flex items-center w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition font-semibold">
-        <span class="mr-3 text-lg">🗑️</span> Hapus Cabang
-    </button>
-</div>
+
 
 {{-- 4. MODAL DI LUAR --}}
 @foreach($cabangs as $cabang)
@@ -101,14 +108,6 @@
 
 @push('scripts')
 <script>
-    // 1. MESIN NOTIFIKASI (TOAST)
-    @if(session('success'))
-        showToast("{{ session('success') }}", "success");
-    @endif
-
-    @if(session('error'))
-        showToast("{{ session('error') }}", "error");
-    @endif
 
     // 2. LOGIKA DROPDOWN TITIK 3
     function dropdownMenu(){
