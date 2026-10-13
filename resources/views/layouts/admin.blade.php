@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="description" content="Admin Dashboard ShangHaejo - Manajemen cabang, menu, pengeluaran, dan laporan transaksi.">
 
     <title>@yield('title', 'Admin') | ShangHaejo</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -51,21 +52,21 @@
     {{-- Page loading indicator --}}
     <div id="page-loader"></div>
 
-    <div class="flex">
+    <div class="flex min-h-screen">
 
         @include('components.admin.sidebar')
 
-        <main class="flex-1 lg:ml-64 min-h-screen flex flex-col">
+        <div class="flex-1 md:ml-64 min-h-screen flex flex-col min-w-0">
 
             @include('components.admin.navbar')
 
-            <div class="p-8 pt-16 flex-1 overflow-hidden">
+            <main class="flex-1 p-3 sm:p-5 lg:p-8 flex flex-col">
                 @yield('content')
-            </div>
+            </main>
 
             @include('components.footer')
 
-        </main>
+        </div>
     </div>
 
     @include('components.admin.toast')

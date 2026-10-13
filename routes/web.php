@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\{CabangController, MenuController, UserController, BeliBahanController, ToppingController, ProfileController, LoginController, LaporanController, DashboardController, DeletionLogController};
+use App\Http\Controllers\Admin\{CabangController, MenuController, UserController, BeliBahanController, ToppingController, ProfileController, LoginController, LaporanController, DashboardController, DeletionLogController, SettingController};
 use App\Http\Controllers\Kasir\PesanKasirController;
 
 // 1. RUTE PUBLIK (Tanpa Login)
@@ -76,5 +76,9 @@ Route::middleware(['auth'])->group(function () {
             Route::put('/profile/update', 'update')->name('profile.update');
             Route::put('/profile/password', 'updatePassword')->name('profile.password');
         });
+
+        // Pengaturan Struk
+        Route::get('/setting', [SettingController::class, 'index'])->name('setting.index');
+        Route::put('/setting', [SettingController::class, 'update'])->name('setting.update');
     });
 });

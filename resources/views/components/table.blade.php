@@ -1,8 +1,8 @@
 {{-- TABEL  --}}
 <div class="relative rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-    {{-- Wrapper baru untuk Scroll Vertikal --}}
-    <div class="overflow-y-auto max-h-[520px] relative custom-scrollbar">
-        <table class="w-full text-sm text-left text-gray-500 border-collapse">
+    {{-- Wrapper untuk Scroll Horizontal & Vertikal --}}
+    <div class="overflow-x-auto overflow-y-auto max-h-[560px] relative custom-scrollbar">
+        <table class="w-full text-sm text-left text-gray-500 border-collapse min-w-[640px] md:min-w-full">
             <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200 sticky top-0 z-10 shadow-sm">
                 {{ $header }}
             </thead>

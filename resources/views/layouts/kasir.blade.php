@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="description" content="Sistem Kasir & POS ShangHaejo - Layanan transaksi kasir cepat dan terintegrasi.">
 
     <title>@yield('title', 'Kasir') | ShangHaejo</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -47,29 +48,31 @@
     </style>
 </head>
 
-<body class="bg-gray-50 font-sans" x-data="{ sidebarOpen: false }">
+<body class="bg-gray-50 font-sans {{ request()->routeIs('kasir.pesan.*') ? 'h-screen overflow-hidden' : 'min-h-screen' }}" x-data="{ sidebarOpen: false }">
     {{-- Page loading indicator --}}
     <div id="page-loader"></div>
 
-    <div class="flex">
+    <div class="flex {{ request()->routeIs('kasir.pesan.*') ? 'h-screen overflow-hidden' : 'min-h-screen' }}">
 
         {{-- Sidebar Kasir --}}
         @include('components.kasir.sidebar')
 
-        <main class="flex-1 lg:ml-64 min-h-screen flex flex-col">
+        <div class="flex-1 md:ml-64 {{ request()->routeIs('kasir.pesan.*') ? 'h-screen overflow-hidden' : 'min-h-screen' }} flex flex-col min-w-0">
 
             {{-- Navbar Kasir --}}
             @include('components.kasir.navbar')
 
-            <div class="p-8 pt-16 flex-1 overflow-hidden">
+            <main class="flex-1 {{ request()->routeIs('kasir.pesan.*') ? 'p-3 sm:p-4 overflow-hidden min-h-0' : 'p-3 sm:p-4 lg:p-6 overflow-y-auto' }} flex flex-col">
                 @yield('content')
-            </div>
+            </main>
 
-            <div class="p-2 pb-1">
+            @if(!request()->routeIs('kasir.pesan.*'))
+            <div class="p-2 pb-1 shrink-0">
                 @include('components.footer')
             </div>
+            @endif
 
-        </main>
+        </div>
 
     </div>
 

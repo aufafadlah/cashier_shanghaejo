@@ -387,26 +387,39 @@ public function index(Request $request)
             'file' => 'required|file|mimes:csv,txt|max:5120',
         ]);
 
-        $file = $request->file('file');
-        $path = $file->getRealPath();
-        $handle = fopen($path, 'r');
+        $file    = $request->file('file');
+        $path    = $file->getRealPath();
+        $handle  = fopen($path, 'r');
 
-        $header = fgetcsv($handle);
-        $imported = 0;
+        $header        = fgetcsv($handle);
+        $imported      = 0;
+        $skipped       = 0;
+        $rowLimit      = 1000; // Batas maksimal baris per import
         $defaultCabang = session('admin_cabang_filter') ?: 1;
 
         DB::beginTransaction();
         try {
             while (($row = fgetcsv($handle, 1000, ',')) !== false) {
-                if (count($row) < 3 || empty(trim($row[1] ?? ''))) continue;
+                // Batasi jumlah baris agar tidak bisa DoS via file besar
+                if ($imported + $skipped >= $rowLimit) {
+                    fclose($handle);
+                    DB::commit();
+                    return redirect()->back()->with('success',
+                        "Berhasil mengimpor {$imported} data (dibatasi {$rowLimit} baris pertama).");
+                }
 
-                $tgl = !empty($row[0]) ? date('Y-m-d', strtotime(str_replace('/', '-', $row[0]))) : now()->toDateString();
-                $namaBarang = trim($row[1]);
-                $qty = isset($row[2]) ? (float) preg_replace('/[^0-9.]/', '', $row[2]) : 1;
+                if (count($row) < 3 || empty(trim($row[1] ?? ''))) {
+                    $skipped++;
+                    continue;
+                }
+
+                $tgl         = !empty($row[0]) ? date('Y-m-d', strtotime(str_replace('/', '-', $row[0]))) : now()->toDateString();
+                $namaBarang  = mb_substr(trim($row[1]), 0, 255); // Potong jika terlalu panjang
+                $qty         = isset($row[2]) ? (float) preg_replace('/[^0-9.]/', '', $row[2]) : 1;
                 $hargaSatuan = isset($row[3]) ? (float) preg_replace('/[^0-9.]/', '', $row[3]) : 0;
-                $hargaTotal = isset($row[4]) && !empty($row[4]) ? (float) preg_replace('/[^0-9.]/', '', $row[4]) : ($qty * $hargaSatuan);
-                $supplier = isset($row[5]) ? trim($row[5]) : null;
-                $keterangan = isset($row[6]) ? trim($row[6]) : null;
+                $hargaTotal  = isset($row[4]) && !empty($row[4]) ? (float) preg_replace('/[^0-9.]/', '', $row[4]) : ($qty * $hargaSatuan);
+                $supplier    = isset($row[5]) ? mb_substr(trim($row[5]), 0, 100) : null;
+                $keterangan  = isset($row[6]) ? mb_substr(trim($row[6]), 0, 500) : null;
 
                 DB::table('tb_beli_bahan')->insert([
                     'id_cabang'    => $defaultCabang,
@@ -428,8 +441,13 @@ public function index(Request $request)
             return redirect()->back()->with('success', "Berhasil mengimpor {$imported} data pengeluaran!");
         } catch (\Exception $e) {
             DB::rollBack();
-            fclose($handle);
-            return redirect()->back()->with('error', "Gagal mengimpor file: " . $e->getMessage());
+            if (is_resource($handle)) fclose($handle);
+            // Log detail error tapi jangan tampilkan ke user
+            \Illuminate\Support\Facades\Log::error('Import CSV Gagal', [
+                'message' => $e->getMessage(),
+                'user_id' => auth()->id(),
+            ]);
+            return redirect()->back()->with('error', 'Gagal mengimpor file. Pastikan format CSV sudah benar.');
         }
     }
 

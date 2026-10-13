@@ -8,7 +8,7 @@
         * {
             box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #1e293b;
+            color: #000000ff;
         }
         body {
             margin: 0;
@@ -123,13 +123,13 @@
         }
         .no-print-bar {
             background: #0f766e;
-            color: white;
             padding: 10px 16px;
             border-radius: 8px;
             margin-bottom: 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            
         }
         .btn-print {
             background: white;
@@ -192,7 +192,7 @@
             <div class="summary-label">Total Non-Tunai (QRIS)</div>
             <div class="summary-value" style="color: #7e22ce;">Rp {{ number_format($totalQris, 0, ',', '.') }}</div>
         </div>
-        <div class="summary-card" style="border-color: #0d9488; background: #f0fdfa;">
+        <div class="summary-card" style="border-color: #0d9488; background: #ffffffff;">
             <div class="summary-label" style="color: #0d9488;">Grand Total Omset</div>
             <div class="summary-value">Rp {{ number_format($totalPendapatan, 0, ',', '.') }}</div>
         </div>

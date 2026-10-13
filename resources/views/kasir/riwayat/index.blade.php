@@ -1,12 +1,12 @@
 @extends('layouts.kasir')
 @section('title', 'Riwayat Pesanan')
 @section('content')
-<div class="h-screen bg-[#f1f5f9] p-3 font-sans overflow-hidden" x-data="{ deleteId: null, search: '{{ request('search', '') }}' }" x-cloak>
+<div class="w-full flex-1 flex flex-col font-sans" x-data="{ deleteId: null, search: '{{ request('search', '') }}' }" x-cloak>
 
-    <div class="max-w-[1600px] mx-auto h-[calc(100vh-140px)] flex flex-col">
+    <div class="max-w-[1600px] w-full mx-auto flex-1 flex flex-col min-h-[580px] md:h-[calc(100vh-8.5rem)]">
 
         {{-- Header --}}
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mb-4 flex justify-between items-center">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-5 mb-3 sm:mb-4 flex flex-col md:flex-row justify-between md:items-center gap-3">
             <div>
                 <h2 class="text-lg font-bold text-slate-800 uppercase tracking-tight flex items-center gap-2">
                     <i class="fa-solid fa-clock-rotate-left text-teal-600"></i>
@@ -68,8 +68,10 @@
             @endif
 
             @if(count($orders) > 0)
-            {{-- Table Header --}}
-            <div class="grid grid-cols-12 gap-3 px-5 py-3 border-b border-slate-100 bg-slate-50/50 text-[10px] font-bold uppercase text-slate-400 tracking-wider">
+            <div class="flex-1 flex flex-col overflow-x-auto overflow-y-hidden">
+                <div class="min-w-[700px] md:min-w-full flex-1 flex flex-col">
+                    {{-- Table Header --}}
+                    <div class="grid grid-cols-12 gap-3 px-5 py-3 border-b border-slate-100 bg-slate-50/50 text-[10px] font-bold uppercase text-slate-400 tracking-wider">
                 <div class="col-span-1 text-center">No</div>
                 <div class="col-span-3">No. Struk</div>
                 <div class="col-span-2">Pelanggan</div>
@@ -141,6 +143,8 @@
                     </div>
                 </div>
                 @endforeach
+            </div>
+                </div>
             </div>
 
             {{-- Footer Summary --}}

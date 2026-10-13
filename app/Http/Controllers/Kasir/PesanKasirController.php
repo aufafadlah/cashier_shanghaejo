@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use App\Models\AppSetting;
 
 class PesanKasirController extends Controller
 {
@@ -42,8 +43,8 @@ public function index()
 public function addToCart(Request $request)
 {
     $request->validate([
-        'menu_id' => 'required',
-        'qty' => 'required|integer|min:1'
+        'menu_id' => 'required|integer',
+        'qty'     => 'required|integer|min:1|max:100',
     ]);
 
     $id_cabang = Auth::user()->id_cabang;
@@ -186,10 +187,17 @@ public function addToCart(Request $request)
                 'id_penjualan' => $id
             ]);
         } catch (\Exception $e) {
-            // Catat error di file log (storage/logs/laravel.log)
-            \Illuminate\Support\Facades\Log::error('Checkout Gagal: ' . $e->getMessage());
+            // Catat error lengkap di file log (tidak ditampilkan ke user)
+            \Illuminate\Support\Facades\Log::error('Checkout Gagal', [
+                'message' => $e->getMessage(),
+                'user_id' => Auth::id(),
+                'trace'   => $e->getTraceAsString(),
+            ]);
 
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            return response()->json([
+                'success' => false,
+                'message' => 'Transaksi gagal diproses. Silakan coba lagi atau hubungi admin.'
+            ], 500);
         }
     }
 
@@ -425,7 +433,9 @@ public function addToCart(Request $request)
                 ->get();
         }
 
-        return view('kasir.pesan.struk', compact('penjualan', 'details')); 
+        $setting = AppSetting::current();
+
+        return view('kasir.pesan.struk', compact('penjualan', 'details', 'setting')); 
     }
 
     public function removeCart(Request $request, $index)

@@ -116,18 +116,18 @@
     });
 </script>
 
-<div x-data="posApp" class="h-full bg-slate-50 p-2 sm:p-4 font-sans lg-overflow-hidden">
+<div x-data="posApp" class="w-full h-full flex flex-col font-sans overflow-hidden">
 
-    <!-- Tab Bar untuk Mobile / Tablet -->
-    <div class="flex lg:hidden bg-slate-100 p-1 rounded-xl mb-3 shadow-inner">
+    <!-- Tab Bar untuk Mobile (< 768px) Saja. Di Tablet & Laptop otomatis disembunyikan -->
+    <div class="shrink-0 flex md:hidden bg-slate-100 p-1 rounded-xl mb-2 shadow-inner">
         <button @click="activeTab = 'menu'" 
                 :class="activeTab === 'menu' ? 'bg-white text-teal-800 shadow-sm' : 'text-slate-500 hover:text-slate-800'"
-                class="flex-1 py-2.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2">
+                class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2">
             <i class="fa-solid fa-utensils"></i> Katalog Menu
         </button>
         <button @click="activeTab = 'cart'" 
                 :class="activeTab === 'cart' ? 'bg-white text-teal-800 shadow-sm' : 'text-slate-500 hover:text-slate-800'"
-                class="flex-1 py-2.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 relative">
+                class="flex-1 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 relative">
             <i class="fa-solid fa-cart-shopping"></i> Detail Pesanan
             <template x-if="cart.length > 0">
                 <span class="absolute top-1 right-2 bg-red-500 text-white text-[9px] w-4.5 h-4.5 rounded-full flex items-center justify-center font-bold" x-text="cart.length"></span>
@@ -135,23 +135,24 @@
         </button>
     </div>
 
-    <div class="flex flex-col lg:flex-row gap-4 max-w-[1600px] mx-auto h-[calc(100vh-140px)]">
+    {{-- Layout Utama: Side-by-Side di Tablet (md: 768px+) dan Laptop (lg: 1024px+) --}}
+    <div class="flex-1 h-full min-h-0 flex flex-col md:flex-row gap-3 lg:gap-4 max-w-[1600px] w-full mx-auto overflow-hidden">
         
         <!-- Kolom Katalog Menu -->
-        <div class="w-full lg:w-7/12 bg-white rounded-2xl shadow-sm border border-slate-200 flex-col overflow-hidden"
-             :class="activeTab === 'menu' ? 'flex h-[calc(100vh-210px)] lg:h-full' : 'hidden lg:flex'">
+        <div class="w-full md:w-3/5 lg:w-7/12 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col h-full min-h-0 overflow-hidden"
+             :class="activeTab === 'menu' ? 'flex' : 'hidden md:flex'">
             
-            <div class="p-5 border-b border-slate-50 flex justify-between items-center">
+            <div class="shrink-0 p-3.5 sm:p-4 border-b border-slate-100 flex justify-between items-center">
                 <div>
                     <h2 class="text-sm sm:text-base font-bold text-slate-800 uppercase tracking-tight">Katalog Menu</h2>
-                    <span class="text-[10px] text-slate-400 font-medium">
-                        <i class="fa-solid fa-store mr-1"></i>{{ $cabang->nama_cabang ?? 'Cabang Aktif' }}
+                    <span class="text-xs text-slate-500 font-medium">
+                        <i class="fa-solid fa-store mr-1 text-teal-600"></i>{{ $cabang->nama_cabang ?? 'Cabang Aktif' }}
                     </span>
                 </div>
-                <span class="text-[10px] bg-teal-50 text-teal-700 px-2 py-1 rounded-md font-bold uppercase">Tersedia: {{ count($menus) }}</span>
+                <span class="text-xs bg-teal-50 text-teal-700 px-2.5 py-1 rounded-lg font-bold uppercase">Tersedia: {{ count($menus) }}</span>
             </div>
 
-            <div class="px-5 py-4">
+            <div class="shrink-0 px-3.5 sm:px-4 py-2.5 border-b border-slate-50">
                 <div class="relative">
                     <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                     <input type="text" x-model="searchQuery" placeholder="Cari menu..." 
@@ -159,21 +160,21 @@
                 </div>
             </div>
             
-            <div class="flex-1 overflow-y-auto px-5 pb-5 custom-scrollbar space-y-2">
+            <div class="flex-1 overflow-y-auto px-3.5 sm:px-4 py-2.5 custom-scrollbar space-y-2 min-h-0">
                 @forelse($menus as $menu)
                 <div x-show="'{{ addslashes(strtolower($menu->nama_menu)) }}'.includes(searchQuery.toLowerCase())"
                      @click="activeMenu = {id: '{{ $menu->id_menu }}', nama: '{{ addslashes($menu->nama_menu) }}', harga: {{ (float)$menu->harga_menu }} }; openDetail = true; qty = 1; selectedToppings = [];" 
-                     class="cursor-pointer group bg-white border border-slate-100 rounded-xl p-3 flex justify-between items-center hover:border-teal-500 hover:shadow-md transition-all">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-slate-50 rounded-lg flex items-center justify-center group-hover:bg-teal-50 transition-colors">
-                            <i class="fa-solid fa-utensils text-slate-300 group-hover:text-teal-600"></i>
+                     class="cursor-pointer group bg-white border border-slate-100 rounded-xl p-2.5 sm:p-3 flex justify-between items-center hover:border-teal-500 hover:shadow-md transition-all">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-teal-50 transition-colors">
+                            <i class="fa-solid fa-utensils text-slate-400 group-hover:text-teal-600 text-base"></i>
                         </div>
-                        <div>
-                            <span class="block font-bold text-sm text-slate-800">{{ $menu->nama_menu }}</span>
-                            <span class="text-teal-700 font-bold text-xs">Rp {{ number_format($menu->harga_menu) }}</span>
+                        <div class="min-w-0">
+                            <span class="block font-bold text-sm sm:text-base text-slate-800 truncate">{{ $menu->nama_menu }}</span>
+                            <span class="text-teal-700 font-bold text-xs sm:text-sm">Rp {{ number_format($menu->harga_menu) }}</span>
                         </div>
                     </div>
-                    <i class="fa-solid fa-circle-plus text-slate-200 text-xl group-hover:text-teal-600 transition-colors"></i>
+                    <i class="fa-solid fa-circle-plus text-slate-300 text-xl group-hover:text-teal-600 transition-colors shrink-0 ml-2"></i>
                 </div>
                 @empty
                 <div class="flex flex-col items-center justify-center h-48 opacity-60">
@@ -185,42 +186,42 @@
             </div>
         </div>
 
-        <!-- Kolom Detail Pesanan -->
-        <div class="w-full lg:w-5/12 bg-white rounded-2xl shadow-sm border border-slate-200 flex-col overflow-hidden"
-             :class="activeTab === 'cart' ? 'flex h-[calc(100vh-210px)] lg:h-full' : 'hidden lg:flex'">
+        <!-- Kolom Detail Pesanan (Cart & Checkout) -->
+        <div class="w-full md:w-2/5 lg:w-5/12 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col h-full min-h-0 overflow-hidden"
+             :class="activeTab === 'cart' ? 'flex' : 'hidden md:flex'">
             
-            <div class="p-5 border-b border-slate-50 flex justify-between items-center">
+            <div class="shrink-0 p-3.5 sm:p-4 border-b border-slate-100 flex justify-between items-center">
                 <div>
                     <h2 class="text-sm sm:text-base font-bold text-slate-800 uppercase tracking-tight">Detail Pesanan</h2>
-                    <span class="text-[10px] text-teal-600 font-bold uppercase"><i class="fa-solid fa-store mr-1"></i>{{ Auth::user()->cabang->nama_cabang ?? 'Pusat' }}</span>
+                    <span class="text-xs text-teal-700 font-bold uppercase"><i class="fa-solid fa-store mr-1"></i>{{ Auth::user()->cabang->nama_cabang ?? 'Pusat' }}</span>
                 </div>
                 <template x-if="cart.length > 0">
-                    <button type="button" @click="clearEntireCart()" class="text-[10px] font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg transition-colors uppercase flex items-center gap-1">
+                    <button type="button" @click="clearEntireCart()" class="text-xs font-bold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg transition-colors uppercase flex items-center gap-1">
                         <i class="fa-solid fa-broom"></i> Kosongkan
                     </button>
                 </template>
             </div>
             
-            <form id="formCheckout" action="{{ route('kasir.pesan.checkout') }}" method="POST" class="flex-1 flex flex-col overflow-hidden">
+            <form id="formCheckout" action="{{ route('kasir.pesan.checkout') }}" method="POST" class="flex-1 flex flex-col h-full min-h-0 overflow-hidden">
                 @csrf
                 
-                <div class="flex-1 overflow-y-auto px-5 py-4 custom-scrollbar bg-slate-50/30">
+                <div class="flex-1 overflow-y-auto px-3.5 sm:px-4 py-2.5 custom-scrollbar bg-slate-50/40 min-h-0">
                     <template x-for="(item, index) in cart" :key="index">
-                        <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100 shadow-sm mb-2">
+                        <div class="flex justify-between items-center bg-white p-2.5 sm:p-3 rounded-xl border border-slate-100 shadow-sm mb-2">
                             <div class="flex-1 min-w-0">
-                                <h3 class="text-xs font-bold text-slate-800 truncate uppercase" x-text="item.nama_menu"></h3>
-                                <p class="text-[9px] text-slate-500 font-medium truncate" 
+                                <h3 class="text-xs sm:text-sm font-bold text-slate-800 truncate uppercase" x-text="item.nama_menu"></h3>
+                                <p class="text-xs text-slate-500 font-medium truncate" 
                                    x-text="item.toppings.length > 0 ? item.toppings.map(t => t.nama_toping).join(', ') : 'ORIGINAL'"></p>
-                                <p class="text-teal-700 font-bold text-[11px] mt-0.5" x-text="'Rp ' + parseInt(item.subtotal).toLocaleString('id-ID')"></p>
+                                <p class="text-teal-700 font-bold text-xs sm:text-sm mt-0.5" x-text="'Rp ' + parseInt(item.subtotal).toLocaleString('id-ID')"></p>
                             </div>
                             
-                            <div class="flex items-center gap-2 ml-3">
-                                <div class="flex items-center gap-2 bg-slate-50 border border-slate-200 px-2 py-1 rounded-lg text-[10px]">
-                                    <button type="button" @click="changeQty(index, 'minus')" class="text-slate-400 font-bold hover:text-red-500 transition-colors px-1">-</button>
-                                    <span class="font-bold text-slate-800 w-4 text-center" x-text="item.qty"></span>
-                                    <button type="button" @click="changeQty(index, 'plus')" class="text-slate-400 font-bold hover:text-teal-600 transition-colors px-1">+</button>
+                            <div class="flex items-center gap-2 ml-2">
+                                <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200 px-2 py-1 rounded-lg text-xs font-bold">
+                                    <button type="button" @click="changeQty(index, 'minus')" class="text-slate-400 hover:text-red-500 transition-colors px-1">-</button>
+                                    <span class="text-slate-800 w-4 text-center" x-text="item.qty"></span>
+                                    <button type="button" @click="changeQty(index, 'plus')" class="text-slate-400 hover:text-teal-600 transition-colors px-1">+</button>
                                 </div>
-                                <button type="button" @click="removeMenu(index)" class="text-slate-300 hover:text-red-500 transition-colors">
+                                <button type="button" @click="removeMenu(index)" class="text-slate-300 hover:text-red-500 transition-colors p-1">
                                     <i class="fa-solid fa-trash-can text-sm"></i>
                                 </button>
                             </div>
@@ -228,14 +229,14 @@
                     </template>
                     
                     <template x-if="cart.length === 0">
-                        <div class="h-full flex flex-col items-center justify-center opacity-35 py-12">
-                            <i class="fa-solid fa-cart-shopping text-3xl text-slate-300 mb-2"></i>
-                            <p class="text-[10px] font-bold uppercase text-slate-400">Keranjang Kosong</p>
+                        <div class="h-full flex flex-col items-center justify-center opacity-40 py-10">
+                            <i class="fa-solid fa-cart-shopping text-3xl text-slate-400 mb-2"></i>
+                            <p class="text-xs font-bold uppercase text-slate-500">Keranjang Kosong</p>
                         </div>
                     </template>
                 </div>
 
-                <div x-show="cart.length > 0" class="p-5 border-t border-slate-100 bg-white space-y-3 shadow-[0_-4px_10px_-5px_rgba(0,0,0,0.1)]">
+                <div x-show="cart.length > 0" class="shrink-0 p-3 sm:p-4 border-t border-slate-100 bg-white space-y-2.5 shadow-[0_-4px_10px_-5px_rgba(0,0,0,0.06)]">
                     <input type="text" name="nama_pelanggan" placeholder="NAMA PELANGGAN" required 
                         class="w-full bg-slate-50 border border-slate-200 focus:border-teal-500 rounded-lg px-3 py-2 text-xs font-bold outline-none transition-all uppercase">
                     
@@ -243,13 +244,13 @@
                         @foreach(['QRIS', 'CASH'] as $metode)
                         <label class="cursor-pointer">
                             <input type="radio" name="jenis_pembayaran" value="{{ $metode }}" x-model="metode" class="hidden peer" required>
-                            <div class="py-2 border border-slate-200 rounded-lg text-center font-bold text-[10px] text-slate-400 peer-checked:border-teal-600 peer-checked:bg-teal-600 peer-checked:text-white transition-all uppercase shadow-sm">
+                            <div class="py-2 border border-slate-200 rounded-lg text-center font-bold text-xs text-slate-500 peer-checked:border-teal-600 peer-checked:bg-teal-600 peer-checked:text-white transition-all uppercase shadow-xs">
                                 {{ $metode }}
                             </div>
                         </label>
                         @endforeach
 
-                        <div x-show="metode === 'CASH'" x-transition class="col-span-2 space-y-2 mt-1">
+                        <div x-show="metode === 'CASH'" x-transition class="col-span-2 space-y-1.5 mt-1">
                             <!-- 1. Input Tampilan -->
                             <input type="text" 
                                    id="display_uang_tunai" 
@@ -266,19 +267,19 @@
                             <!-- 2. Input Hidden -->
                             <input type="hidden" name="uang_tunai" id="input_uang_tunai">
 
-                            <div class="flex justify-between px-1 text-[9px] font-bold uppercase">
+                            <div class="flex justify-between px-1 text-xs font-bold uppercase">
                                 <span class="text-slate-400">Kembalian</span>
                                 <span id="text_kembalian" class="text-green-600 font-bold">Rp 0</span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="flex justify-between items-center py-2">
-                        <span class="text-slate-500 font-bold text-[10px] uppercase">Grand Total</span>
-                        <span id="grand_total_val" :data-total="getCartSubtotal()" class="text-slate-900 font-bold text-xl tracking-tighter" x-text="'Rp ' + getCartSubtotal().toLocaleString('id-ID')"></span>
+                    <div class="flex justify-between items-center py-0.5">
+                        <span class="text-slate-500 font-bold text-xs uppercase">Grand Total</span>
+                        <span id="grand_total_val" :data-total="getCartSubtotal()" class="text-slate-900 font-black text-xl sm:text-2xl tracking-tight" x-text="'Rp ' + getCartSubtotal().toLocaleString('id-ID')"></span>
                     </div>
 
-                    <button type="submit" class="w-full bg-teal-600 text-white font-bold text-sm py-3 rounded-xl hover:bg-teal-700 shadow-lg shadow-teal-100 uppercase tracking-wider transition-all active:scale-[0.98]">
+                    <button type="submit" class="w-full bg-teal-600 text-white font-bold text-sm py-3 rounded-xl hover:bg-teal-700 shadow-md shadow-teal-600/20 uppercase tracking-wider transition-all active:scale-[0.98]">
                         Proses Checkout
                     </button>
                 </div>

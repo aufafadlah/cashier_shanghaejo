@@ -1,6 +1,6 @@
-<header class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 sm:px-8 fixed top-0 right-0 left-0 lg:left-64 z-30 shadow-sm transition-all">
+<header class="sticky top-0 z-30 h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 sm:px-6 lg:px-8 shadow-xs w-full transition-all">
     <div class="flex items-center gap-2">
-        <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden text-gray-600 focus:outline-none p-1 mr-1 hover:text-teal-600 transition-colors">
+        <button @click="sidebarOpen = !sidebarOpen" class="md:hidden text-gray-600 focus:outline-none p-1 mr-1 hover:text-teal-600 transition-colors">
             <i class="fa-solid fa-bars text-lg"></i>
         </button>
         <nav class="flex items-center text-sm font-medium text-gray-400">
@@ -10,7 +10,7 @@
         </nav>
     </div>
 
-    <div class="flex items-center gap-4">
+    <div class="flex items-center gap-3 sm:gap-4 shrink-0">
         {{-- Info Cabang Kasir Aktif --}}
         <div class="flex items-center gap-2 px-3 py-1.5 bg-teal-50 border border-teal-200 rounded-xl text-teal-800 shadow-xs">
             <i class="fa-solid fa-store text-teal-600 text-xs"></i>
