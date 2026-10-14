@@ -20,18 +20,32 @@ Route::get('/debug-info', function () {
         $sessionStatus = 'FAILED: ' . $e->getMessage();
     }
 
+    // Cek isi tabel tb_cabang
+    try {
+        $cabangs = \Illuminate\Support\Facades\DB::table('tb_cabang')->get();
+        $cabangStatus = $cabangs;
+    } catch (\Exception $e) {
+        $cabangStatus = 'FAILED: ' . $e->getMessage();
+    }
+
+    // Cek isi tabel tb_user
+    try {
+        $users = \Illuminate\Support\Facades\DB::table('tb_user')->select('id_user','name','username','role','is_active','id_cabang')->get();
+        $userStatus = $users;
+    } catch (\Exception $e) {
+        $userStatus = 'FAILED: ' . $e->getMessage();
+    }
+
     return response()->json([
         'app_env'          => config('app.env'),
         'app_url'          => config('app.url'),
-        'app_debug'        => config('app.debug'),
-        'db_connection'    => config('database.default'),
         'db_status'        => $dbStatus,
         'session_driver'   => config('session.driver'),
         'session_encrypt'  => config('session.encrypt'),
-        'session_domain'   => config('session.domain'),
         'session_status'   => $sessionStatus,
-        'php_version'      => PHP_VERSION,
         'csrf_token'       => csrf_token(),
+        'tb_cabang'        => $cabangStatus,
+        'tb_user'          => $userStatus,
     ]);
 });
 
