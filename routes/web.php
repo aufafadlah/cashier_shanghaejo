@@ -14,7 +14,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
     // --- RUTE KASIR ---
-    Route::prefix('kasir')->name('kasir.')->group(function () {
+    Route::middleware(['role:kasir'])->prefix('kasir')->name('kasir.')->group(function () {
         Route::controller(PesanKasirController::class)->group(function () {
             Route::get('/pesan', 'index')->name('pesan.index');
             Route::post('/pesan/add', 'addToCart')->name('pesan.add');

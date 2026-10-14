@@ -37,7 +37,7 @@ public function index(Request $request)
 }
     public function create()
     {
-        $cabang = Cabang::all();
+        $cabang = Cabang::where('is_active', 1)->orderBy('nama_cabang')->get();
         return view('admin.pembelian.create', compact('cabang'));
     }
 
@@ -59,6 +59,11 @@ public function index(Request $request)
             'keterangan'   => 'nullable|string',
         ]);
 
+        $selectedCabang = Cabang::find($request->id_cabang);
+        if (!$selectedCabang || !$selectedCabang->is_active) {
+            return redirect()->back()->withInput()->with('error', 'Cabang yang dipilih sedang dinonaktifkan.');
+        }
+
         // ✅ harga_total dihitung di satu tempat saja
         BeliBahan::create([
             'id_cabang'    => $request->id_cabang,
@@ -77,7 +82,7 @@ public function index(Request $request)
     public function edit($id)
     {
         $pengeluaran = BeliBahan::findOrFail($id);
-        $cabang      = Cabang::all();
+        $cabang      = Cabang::where('is_active', 1)->orderBy('nama_cabang')->get();
         return view('admin.pembelian.edit', compact('pengeluaran', 'cabang'));
     }
 
@@ -98,6 +103,11 @@ public function index(Request $request)
             'supplier'     => 'required|string|max:100',
             'keterangan'   => 'nullable|string',
         ]);
+
+        $selectedCabang = Cabang::find($request->id_cabang);
+        if (!$selectedCabang || !$selectedCabang->is_active) {
+            return redirect()->back()->withInput()->with('error', 'Cabang yang dipilih sedang dinonaktifkan.');
+        }
 
         $data = BeliBahan::findOrFail($id);
 

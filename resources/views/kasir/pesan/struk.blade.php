@@ -131,37 +131,37 @@
 
         /* Ukuran 48mm (Ekstra Kecil) */
         .receipt-card.size-48mm {
-            width: 220px;
+            width: 195px;
             max-width: 95vw;
-            padding: 16px 12px;
+            padding: 14px 10px;
         }
-        .receipt-card.size-48mm .brand-name { font-size: 14px; }
-        .receipt-card.size-48mm .address { font-size: 9.5px; line-height: 1.3; margin-bottom: 10px; }
-        .receipt-card.size-48mm .meta-info { font-size: 9.5px; line-height: 1.4; margin-bottom: 8px; }
-        .receipt-card.size-48mm .menu-name { font-size: 11px; }
-        .receipt-card.size-48mm .menu-qty { font-size: 11px; }
-        .receipt-card.size-48mm .topping-list { font-size: 9px; }
-        .receipt-card.size-48mm .price-sub { font-size: 10.5px; }
-        .receipt-card.size-48mm .calc-section { font-size: 10.5px; line-height: 1.6; }
-        .receipt-card.size-48mm .total-row { font-size: 13.5px; }
-        .receipt-card.size-48mm .footer { font-size: 9.5px; margin-top: 14px; }
+        .receipt-card.size-48mm .brand-name { font-size: 13px; }
+        .receipt-card.size-48mm .address { font-size: 8.5px; line-height: 1.25; margin-bottom: 8px; }
+        .receipt-card.size-48mm .meta-info { font-size: 8.5px; line-height: 1.35; margin-bottom: 6px; }
+        .receipt-card.size-48mm .menu-name { font-size: 9.5px; }
+        .receipt-card.size-48mm .menu-qty { font-size: 9.5px; }
+        .receipt-card.size-48mm .topping-list { font-size: 8px; }
+        .receipt-card.size-48mm .price-sub { font-size: 9.5px; }
+        .receipt-card.size-48mm .calc-section { font-size: 9px; line-height: 1.5; }
+        .receipt-card.size-48mm .total-row { font-size: 11.5px; }
+        .receipt-card.size-48mm .footer { font-size: 8.5px; margin-top: 12px; }
 
         /* Ukuran 58mm (Default Standar Mini Kasir) */
         .receipt-card.size-58mm {
-            width: 260px;
+            width: 225px;
             max-width: 95vw;
-            padding: 22px 18px;
+            padding: 18px 14px;
         }
-        .receipt-card.size-58mm .brand-name { font-size: 16px; }
-        .receipt-card.size-58mm .address { font-size: 10.5px; line-height: 1.35; margin-bottom: 14px; }
-        .receipt-card.size-58mm .meta-info { font-size: 10.5px; line-height: 1.45; margin-bottom: 12px; }
-        .receipt-card.size-58mm .menu-name { font-size: 12px; }
-        .receipt-card.size-58mm .menu-qty { font-size: 12px; }
-        .receipt-card.size-58mm .topping-list { font-size: 10px; }
-        .receipt-card.size-58mm .price-sub { font-size: 11.5px; }
-        .receipt-card.size-58mm .calc-section { font-size: 11.5px; line-height: 1.8; }
-        .receipt-card.size-58mm .total-row { font-size: 15px; }
-        .receipt-card.size-58mm .footer { font-size: 10.5px; margin-top: 18px; }
+        .receipt-card.size-58mm .brand-name { font-size: 14.5px; }
+        .receipt-card.size-58mm .address { font-size: 9.5px; line-height: 1.3; margin-bottom: 10px; }
+        .receipt-card.size-58mm .meta-info { font-size: 9.5px; line-height: 1.4; margin-bottom: 10px; }
+        .receipt-card.size-58mm .menu-name { font-size: 10.5px; }
+        .receipt-card.size-58mm .menu-qty { font-size: 10.5px; }
+        .receipt-card.size-58mm .topping-list { font-size: 8.5px; }
+        .receipt-card.size-58mm .price-sub { font-size: 10.5px; }
+        .receipt-card.size-58mm .calc-section { font-size: 10px; line-height: 1.6; }
+        .receipt-card.size-58mm .total-row { font-size: 13.5px; }
+        .receipt-card.size-58mm .footer { font-size: 9.5px; margin-top: 14px; }
 
         /* Ukuran 80mm (Besar / Standar POS Desktop) */
         .receipt-card.size-80mm {
@@ -339,35 +339,51 @@
                 color: #000000 !important;
             }
 
-            /* UKURAN 48mm SAAT CETAK */
+            /* UKURAN 48mm SAAT CETAK (Mini / Bluetooth Printer) */
             .receipt-card.size-48mm {
-                width: 46mm !important;
-                max-width: 46mm !important;
-                font-size: 10px !important;
-                padding: 1.5mm 1mm 4mm !important;
+                width: 42mm !important;
+                max-width: 42mm !important;
+                font-size: 9px !important;
+                padding: 1mm 0 3mm !important;
             }
-            .receipt-card.size-48mm .brand-name { font-size: 13.5px !important; }
-            .receipt-card.size-48mm .total-row { font-size: 12.5px !important; }
+            .receipt-card.size-48mm .brand-name { font-size: 12px !important; }
+            .receipt-card.size-48mm .address { font-size: 8.5px !important; line-height: 1.25 !important; }
+            .receipt-card.size-48mm .meta-info { font-size: 8.5px !important; }
+            .receipt-card.size-48mm .menu-name { font-size: 9.5px !important; }
+            .receipt-card.size-48mm .menu-qty { font-size: 9.5px !important; }
+            .receipt-card.size-48mm .topping-list { font-size: 8px !important; }
+            .receipt-card.size-48mm .price-sub { font-size: 9.5px !important; }
+            .receipt-card.size-48mm .calc-section { font-size: 9px !important; }
+            .receipt-card.size-48mm .total-row { font-size: 11.5px !important; }
+            .receipt-card.size-48mm .footer { font-size: 8.5px !important; }
 
-            /* UKURAN 58mm SAAT CETAK */
+            /* UKURAN 58mm SAAT CETAK (Standar Thermal POS: Printable area 48mm / 384 dots) */
             .receipt-card.size-58mm {
-                width: 54mm !important;
-                max-width: 54mm !important;
-                font-size: 11px !important;
-                padding: 2mm 1mm 6mm !important;
+                width: 48mm !important;
+                max-width: 48mm !important;
+                font-size: 10px !important;
+                padding: 1.5mm 0 4mm !important;
             }
-            .receipt-card.size-58mm .brand-name { font-size: 15px !important; }
-            .receipt-card.size-58mm .total-row { font-size: 14px !important; }
+            .receipt-card.size-58mm .brand-name { font-size: 13.5px !important; }
+            .receipt-card.size-58mm .address { font-size: 9.5px !important; line-height: 1.3 !important; }
+            .receipt-card.size-58mm .meta-info { font-size: 9.5px !important; }
+            .receipt-card.size-58mm .menu-name { font-size: 10.5px !important; }
+            .receipt-card.size-58mm .menu-qty { font-size: 10.5px !important; }
+            .receipt-card.size-58mm .topping-list { font-size: 8.5px !important; }
+            .receipt-card.size-58mm .price-sub { font-size: 10.5px !important; }
+            .receipt-card.size-58mm .calc-section { font-size: 10px !important; }
+            .receipt-card.size-58mm .total-row { font-size: 13px !important; }
+            .receipt-card.size-58mm .footer { font-size: 9.5px !important; }
 
             /* UKURAN 80mm SAAT CETAK */
             .receipt-card.size-80mm {
-                width: 74mm !important;
-                max-width: 74mm !important;
-                font-size: 12.5px !important;
-                padding: 4mm 2mm 8mm !important;
+                width: 72mm !important;
+                max-width: 72mm !important;
+                font-size: 12px !important;
+                padding: 3mm 1mm 6mm !important;
             }
-            .receipt-card.size-80mm .brand-name { font-size: 17px !important; }
-            .receipt-card.size-80mm .total-row { font-size: 15.5px !important; }
+            .receipt-card.size-80mm .brand-name { font-size: 16px !important; }
+            .receipt-card.size-80mm .total-row { font-size: 15px !important; }
 
             .divider { 
                 border-top: 1.5px dashed #000000 !important; 

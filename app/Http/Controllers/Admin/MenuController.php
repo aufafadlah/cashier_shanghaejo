@@ -50,8 +50,8 @@ class MenuController extends Controller
      */
     public function create()
     {
-        // Ambil SEMUA data cabang agar semua cabang bisa dipilih saat membuat menu
-        $branches = Cabang::orderBy('nama_cabang')->get();
+        // Hanya cabang aktif yang dapat dipilih untuk menu baru
+        $branches = Cabang::where('is_active', 1)->orderBy('nama_cabang')->get();
         return view('admin.menu.create', compact('branches'));
     }
 
@@ -74,6 +74,13 @@ class MenuController extends Controller
             'branch_ids'   => 'required|array',
             'harga_cabang' => 'required|array',
         ]);
+
+        // Pastikan tidak ada cabang non-aktif yang dipilih
+        $activeBranchIds = Cabang::where('is_active', 1)->pluck('id_cabang')->toArray();
+        $invalidBranches = array_diff($request->branch_ids, $activeBranchIds);
+        if (!empty($invalidBranches)) {
+            return redirect()->back()->withInput()->with('error', 'Cabang yang dinonaktifkan tidak dapat dipilih.');
+        }
 
         // Simpan data induk ke tb_menu
         $menu = Menu::create([
@@ -110,8 +117,8 @@ class MenuController extends Controller
             return redirect()->route('admin.menu.index')->with('error', 'Data menu tidak ditemukan!');
         }
 
-        // Ambil SEMUA cabang agar form edit menampilkan semua pilihan
-        $branches = Cabang::orderBy('nama_cabang')->get();
+        // Hanya tampilkan cabang aktif yang bisa diatur / diedit
+        $branches = Cabang::where('is_active', 1)->orderBy('nama_cabang')->get();
 
         return view('admin.menu.edit', compact('menu', 'branches'));
     }
@@ -135,6 +142,13 @@ class MenuController extends Controller
             'branch_ids'   => 'required|array',
             'harga_cabang' => 'required|array',
         ]);
+
+        // Pastikan tidak ada cabang non-aktif yang dipilih
+        $activeBranchIds = Cabang::where('is_active', 1)->pluck('id_cabang')->toArray();
+        $invalidBranches = array_diff($request->branch_ids, $activeBranchIds);
+        if (!empty($invalidBranches)) {
+            return redirect()->back()->withInput()->with('error', 'Cabang yang dinonaktifkan tidak dapat dipilih.');
+        }
 
         // Ambil query builder eksplisit agar Intelephense tidak merah
         $menu = Menu::query()->where('id_menu', $id)->first();

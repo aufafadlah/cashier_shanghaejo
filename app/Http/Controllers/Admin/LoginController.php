@@ -36,6 +36,19 @@ class LoginController extends Controller
             'password'  => $request->password,
             'is_active' => 1
         ])) {
+            $user = Auth::user();
+
+            // Cegah kasir login jika cabangnya dinonaktifkan
+            if ($user->role === 'kasir') {
+                $cabang = $user->cabang ?? \Illuminate\Support\Facades\DB::table('tb_cabang')->where('id_cabang', $user->id_cabang)->first();
+                if (!$cabang || !$cabang->is_active) {
+                    Auth::logout();
+                    $request->session()->invalidate();
+                    $request->session()->regenerateToken();
+                    return back()->with('error', 'Cabang Anda sedang dinonaktifkan. Silakan hubungi Administrator.');
+                }
+            }
+
             // ✅ reset rate limiter setelah login berhasil
             RateLimiter::clear($key);
 

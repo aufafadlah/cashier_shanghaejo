@@ -49,8 +49,20 @@
                 return this.cart.reduce((sum, item) => sum + (parseFloat(item.subtotal) || 0), 0);
             },
 
+            isAddingToCart: false,
             async addMenuToCart(e) {
+                if (this.isAddingToCart) return;
+                this.isAddingToCart = true;
+
                 const form = e.target;
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('opacity-70', 'cursor-not-allowed');
+                    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Menyimpan...';
+                }
+
                 const formData = new FormData(form);
                 try {
                     const res = await fetch(form.action, {
@@ -65,7 +77,17 @@
                     } else {
                         Swal.fire("Gagal", data.message || "Gagal menambahkan menu", "error");
                     }
-                } catch (err) { console.error(err); Swal.fire("Error", "Koneksi bermasalah", "error"); }
+                } catch (err) { 
+                    console.error(err); 
+                    Swal.fire("Error", "Koneksi bermasalah", "error"); 
+                } finally {
+                    this.isAddingToCart = false;
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.classList.remove('opacity-70', 'cursor-not-allowed');
+                        submitBtn.innerHTML = originalBtnHtml;
+                    }
+                }
             },
 
             async changeQty(index, action) {
@@ -362,8 +384,14 @@
         }
 
         if (checkoutForm) {
+            let isCheckoutInProgress = false;
+
             checkoutForm.addEventListener('submit', function(e) {
                 e.preventDefault(); 
+
+                if (isCheckoutInProgress) {
+                    return false;
+                }
 
                 const form = this;
                 const formData = new FormData(form);
@@ -377,7 +405,7 @@
                     return;
                 }
 
-                // Konfirmasi & Kirim
+                // Konfirmasi & Kirim dengan pencegahan double click / double checkout
                 Swal.fire({
                     title: 'Konfirmasi Bayar',
                     text: "Proses transaksi sekarang?",
@@ -385,10 +413,16 @@
                     showCancelButton: true,
                     confirmButtonColor: '#0d9488', // teal-600
                     confirmButtonText: 'Ya, Checkout!',
-                    cancelButtonText: 'Batal'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        fetch(form.action, {
+                    cancelButtonText: 'Batal',
+                    showLoaderOnConfirm: true,
+                    allowOutsideClick: () => !Swal.isLoading(),
+                    preConfirm: () => {
+                        if (isCheckoutInProgress) {
+                            return false;
+                        }
+                        isCheckoutInProgress = true;
+
+                        return fetch(form.action, {
                             method: 'POST',
                             body: formData,
                             headers: {
@@ -396,19 +430,25 @@
                                 'Accept': 'application/json'
                             }
                         })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                // Cetak struk di tab yang sama
-                                window.location.href = `/kasir/pesan/print/${data.id_penjualan}`;
-                            } else {
-                                Swal.fire('Gagal!', data.message, 'error');
-                            }
+                        .then(response => {
+                            return response.json().then(data => {
+                                if (!response.ok || !data.success) {
+                                    throw new Error(data.message || 'Transaksi gagal diproses.');
+                                }
+                                return data;
+                            });
                         })
                         .catch(err => {
-                            console.error(err);
-                            Swal.fire('Error', 'Koneksi bermasalah', 'error');
+                            isCheckoutInProgress = false;
+                            Swal.showValidationMessage(err.message || 'Koneksi bermasalah');
                         });
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed && result.value && result.value.success) {
+                        // Cetak struk di tab yang sama
+                        window.location.href = `/kasir/pesan/print/${result.value.id_penjualan}`;
+                    } else {
+                        isCheckoutInProgress = false;
                     }
                 });
             });

@@ -16,7 +16,7 @@ class AppServiceProvider extends ServiceProvider
             static $daftarCabang = null;
             if ($daftarCabang === null) {
                 try {
-                    $daftarCabang = DB::table('tb_cabang')->get();
+                    $daftarCabang = DB::table('tb_cabang')->where('is_active', 1)->orderBy('nama_cabang')->get();
                 } catch (\Throwable $e) {
                     $daftarCabang = collect();
                 }

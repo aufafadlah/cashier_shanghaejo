@@ -5,6 +5,7 @@ use App\Models\Cabang;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class CabangController extends Controller
 {
@@ -64,13 +65,47 @@ public function update(Request $request, $id)
     $validated = $request->validate([
         'nama_cabang' => 'required|string|max:255',
         'alamat'      => 'required|string',
-        'is_active'   => 'nullable|boolean', // Pastikan ini ditangani
+        'is_active'   => 'required|in:0,1',
     ]);
 
-    // Menggunakan $validated lebih aman daripada $request->all()
+    $oldStatus = (bool) $cabang->is_active;
+    $newStatus = (bool) $validated['is_active'];
+
     $cabang->update($validated);
 
-    return redirect()->route('admin.cabang.index')->with('success', 'Data cabang diperbarui!');
+    if ($oldStatus !== $newStatus) {
+        if (!$newStatus) {
+            // 1. Cabang dinonaktifkan:
+            // Nonaktifkan menu di cabang ini (branch_menu.is_active = 0)
+            DB::table('branch_menu')
+                ->where('branch_id', $cabang->id_cabang)
+                ->update(['is_active' => false, 'updated_at' => now()]);
+
+            // Nonaktifkan user di cabang ini (kecuali akun admin yang sedang login)
+            DB::table('tb_user')
+                ->where('id_cabang', $cabang->id_cabang)
+                ->where('id_user', '!=', Auth::id())
+                ->update(['is_active' => false, 'updated_at' => now()]);
+
+            // Reset filter admin jika cabang yang difilter dinonaktifkan
+            if (session('admin_cabang_filter') == $cabang->id_cabang) {
+                session()->forget('admin_cabang_filter');
+            }
+        } else {
+            // 2. Cabang diaktifkan kembali:
+            // Aktifkan kembali menu yang terdaftar di cabang ini
+            DB::table('branch_menu')
+                ->where('branch_id', $cabang->id_cabang)
+                ->update(['is_active' => true, 'updated_at' => now()]);
+
+            // Aktifkan kembali user di cabang ini
+            DB::table('tb_user')
+                ->where('id_cabang', $cabang->id_cabang)
+                ->update(['is_active' => true, 'updated_at' => now()]);
+        }
+    }
+
+    return redirect()->route('admin.cabang.index')->with('success', 'Data cabang dan status terkait berhasil diperbarui!');
 }
 public function destroy($id)
 {

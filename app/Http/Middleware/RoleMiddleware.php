@@ -24,6 +24,17 @@ class RoleMiddleware
             return redirect()->route('login')->with('error', 'Anda tidak memiliki akses.');
         }
 
+        // Jika kasir mencoba mengakses halaman kasir, pastikan cabangnya masih aktif
+        if (Auth::user()->role === 'kasir') {
+            $cabang = Auth::user()->cabang ?? \App\Models\Cabang::find(Auth::user()->id_cabang);
+            if (!$cabang || !$cabang->is_active) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                return redirect()->route('login')->with('error', 'Cabang Anda telah dinonaktifkan. Silakan hubungi Administrator.');
+            }
+        }
+
         return $next($request);
     }
 }

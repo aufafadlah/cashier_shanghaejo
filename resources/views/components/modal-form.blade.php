@@ -15,7 +15,8 @@
         </div>
 
         {{-- Form Area: Kita bagi menjadi area scrollable --}}
-        <form action="{{ $action }}" method="POST" class="flex flex-col flex-grow overflow-hidden">
+        <form action="{{ $action }}" method="POST" class="flex flex-col flex-grow overflow-hidden"
+              onsubmit="if(this.dataset.submitting === 'true'){ return false; } this.dataset.submitting = 'true'; const btn = this.querySelector('button[type=submit]'); if(btn){ btn.disabled = true; btn.classList.add('opacity-70', 'cursor-not-allowed'); btn.innerHTML = '<i class=\'fa-solid fa-spinner fa-spin mr-1.5\'></i> Menyimpan...'; }">
             @csrf
             @if($method !== 'POST')
                 @method($method)

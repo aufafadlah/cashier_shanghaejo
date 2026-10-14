@@ -57,7 +57,53 @@ function initCurrencyFormatters() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', initCurrencyFormatters);
+// Proteksi Global Anti Double-Submit (Mencegah Lag / Klik Ganda Tersimpan 2 Kali)
+function initAntiDoubleSubmit() {
+    document.addEventListener('submit', function(e) {
+        const form = e.target;
+        if (!form || form.tagName !== 'FORM') return;
+
+        // Abaikan form yang mengontrol AJAX khusus sendiri
+        if (form.id === 'formCheckout' || form.dataset.ajax === 'true') return;
+
+        if (form.dataset.submitting === 'true') {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+
+        form.dataset.submitting = 'true';
+
+        const submitBtns = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+        submitBtns.forEach(btn => {
+            btn.disabled = true;
+            btn.classList.add('opacity-70', 'cursor-not-allowed');
+            if (btn.tagName === 'BUTTON' && !btn.querySelector('.fa-spinner')) {
+                btn.dataset.originalContent = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Menyimpan...';
+            }
+        });
+
+        // Reset proteksi setelah 7 detik jika halaman tidak berpindah (misal ada error validasi client)
+        setTimeout(() => {
+            form.dataset.submitting = 'false';
+            submitBtns.forEach(btn => {
+                btn.disabled = false;
+                btn.classList.remove('opacity-70', 'cursor-not-allowed');
+                if (btn.dataset.originalContent) {
+                    btn.innerHTML = btn.dataset.originalContent;
+                }
+            });
+        }, 7000);
+    }, true);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initCurrencyFormatters();
+    initAntiDoubleSubmit();
+});
+
 window.initCurrencyFormatters = initCurrencyFormatters;
+window.initAntiDoubleSubmit = initAntiDoubleSubmit;
 window.formatRupiah = formatRupiah;
 window.cleanRupiah = cleanRupiah;

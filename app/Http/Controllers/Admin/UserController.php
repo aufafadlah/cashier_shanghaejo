@@ -35,7 +35,7 @@ public function index(Request $request) {
 
     public function create()
     {
-        $cabangs = DB::table('tb_cabang')->get();
+        $cabangs = DB::table('tb_cabang')->where('is_active', 1)->orderBy('nama_cabang')->get();
         return view('admin.user.create', compact('cabangs'));
     }
 
@@ -50,11 +50,16 @@ public function index(Request $request) {
             'is_active' => 'required|in:0,1',
         ]);
 
+        // Validasi cabang harus aktif
+        $targetCabang = DB::table('tb_cabang')->where('id_cabang', $request->id_cabang)->first();
+        if (!$targetCabang || !$targetCabang->is_active) {
+            return redirect()->back()->withInput()->with('error', 'Cabang yang dipilih sedang dinonaktifkan.');
+        }
+
         // Multi-Branch Validation:
         // Jika Admin sedang memfilter cabang tertentu di session, namun mencoba menginput/assign user ke cabang lain
         $adminCabangFilter = session('admin_cabang_filter');
         if ($adminCabangFilter && $adminCabangFilter != $request->id_cabang) {
-            $targetCabang = DB::table('tb_cabang')->where('id_cabang', $request->id_cabang)->first();
             $namaCabang = $targetCabang ? $targetCabang->nama_cabang : 'cabang tersebut';
             return redirect()->back()->withInput()->with('error', "Anda harus mengganti cabang ke {$namaCabang} terlebih dahulu");
         }
@@ -81,7 +86,7 @@ public function index(Request $request) {
             return redirect()->route('admin.user.index')->with('error', 'User tidak ditemukan!');
         }
 
-        $cabangs = DB::table('tb_cabang')->get();
+        $cabangs = DB::table('tb_cabang')->where('is_active', 1)->orderBy('nama_cabang')->get();
         return view('admin.user.edit', compact('user', 'cabangs'));
     }
 
@@ -95,11 +100,16 @@ public function index(Request $request) {
             'is_active' => 'required|in:0,1',
         ]);
 
+        // Validasi cabang harus aktif
+        $targetCabang = DB::table('tb_cabang')->where('id_cabang', $request->id_cabang)->first();
+        if (!$targetCabang || !$targetCabang->is_active) {
+            return redirect()->back()->withInput()->with('error', 'Cabang yang dipilih sedang dinonaktifkan.');
+        }
+
         // Multi-Branch Validation:
         // Jika Admin sedang memfilter cabang tertentu di session, namun mencoba update user ke cabang lain
         $adminCabangFilter = session('admin_cabang_filter');
         if ($adminCabangFilter && $adminCabangFilter != $request->id_cabang) {
-            $targetCabang = DB::table('tb_cabang')->where('id_cabang', $request->id_cabang)->first();
             $namaCabang = $targetCabang ? $targetCabang->nama_cabang : 'cabang tersebut';
             return redirect()->back()->withInput()->with('error', "Anda harus mengganti cabang ke {$namaCabang} terlebih dahulu");
         }

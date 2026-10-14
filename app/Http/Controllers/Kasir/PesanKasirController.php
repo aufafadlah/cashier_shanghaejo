@@ -37,6 +37,13 @@ public function index()
         ->where('id_cabang', $id_cabang)
         ->first();
 
+    if (!$cabang || !$cabang->is_active) {
+        Auth::logout();
+        request()->session()->invalidate();
+        request()->session()->regenerateToken();
+        return redirect()->route('login')->with('error', 'Cabang Anda telah dinonaktifkan. Silakan hubungi Administrator.');
+    }
+
     return view('kasir.pesan.index', compact('menus', 'toppings', 'cart', 'cabang'));
 }
 
@@ -121,8 +128,23 @@ public function addToCart(Request $request)
             'jenis_pembayaran' => 'required'
         ]);
 
-        $cart = session()->get('cart', []);
-        if (empty($cart)) return response()->json(['success' => false, 'message' => 'Keranjang kosong!'], 400);
+        $id_cabang = Auth::user()->id_cabang ?? 1;
+        $cabang = DB::table('tb_cabang')->where('id_cabang', $id_cabang)->first();
+        if (!$cabang || !$cabang->is_active) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cabang Anda telah dinonaktifkan. Transaksi tidak dapat diproses.'
+            ], 403);
+        }
+
+        // Anti Double-Checkout: Ambil dan langsung kosongkan cart secara atomik
+        $cart = session()->pull('cart', []);
+        if (empty($cart)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Keranjang kosong atau pesanan sudah berhasil diproses!'
+            ], 400);
+        }
 
         $totalAwal = array_sum(array_column($cart, 'subtotal'));
         $metode = strtolower($request->jenis_pembayaran);
@@ -131,6 +153,9 @@ public function addToCart(Request $request)
 
         // Validasi Pembayaran Tunai: Uang tunai tidak boleh kurang dari total belanja
         if ($isCash && $uangTunai < $totalAwal) {
+            // Kembalikan cart ke session karena validasi gagal
+            session()->put('cart', $cart);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Uang tunai (Rp ' . number_format($uangTunai, 0, ',', '.') . ') kurang dari total bayar (Rp ' . number_format($totalAwal, 0, ',', '.') . ')!'
@@ -138,10 +163,10 @@ public function addToCart(Request $request)
         }
 
         try {
-            $id = DB::transaction(function () use ($request, $cart, $totalAwal, $metode, $uangTunai) {
+            $id = DB::transaction(function () use ($request, $cart, $totalAwal, $metode, $uangTunai, $id_cabang) {
                 // 1. Simpan Header Penjualan
                 $penjualanId = DB::table('tb_penjualan')->insertGetId([
-                    'id_cabang'         => Auth::user()->id_cabang ?? 1,
+                    'id_cabang'         => $id_cabang,
                     'id_user'           => Auth::id() ?? 1,
                     'nama_pelanggan'    => $request->nama_pelanggan,
                     'total_awal'        => $totalAwal,
@@ -180,13 +205,14 @@ public function addToCart(Request $request)
                 return $penjualanId;
             });
 
-            session()->forget('cart');
-
             return response()->json([
                 'success' => true, 
                 'id_penjualan' => $id
             ]);
         } catch (\Exception $e) {
+            // Kembalikan cart ke session jika terjadi kegagalan transaksi
+            session()->put('cart', $cart);
+
             // Catat error lengkap di file log (tidak ditampilkan ke user)
             \Illuminate\Support\Facades\Log::error('Checkout Gagal', [
                 'message' => $e->getMessage(),
