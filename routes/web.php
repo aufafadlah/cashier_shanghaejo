@@ -4,6 +4,37 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\{CabangController, MenuController, UserController, BeliBahanController, ToppingController, ProfileController, LoginController, LaporanController, DashboardController, DeletionLogController, SettingController};
 use App\Http\Controllers\Kasir\PesanKasirController;
 
+// ⚠️ DEBUG ROUTE — HAPUS SETELAH MASALAH TERIDENTIFIKASI
+Route::get('/debug-info', function () {
+    try {
+        \Illuminate\Support\Facades\DB::connection()->getPdo();
+        $dbStatus = 'OK - Connected to: ' . \Illuminate\Support\Facades\DB::connection()->getDatabaseName();
+    } catch (\Exception $e) {
+        $dbStatus = 'FAILED: ' . $e->getMessage();
+    }
+
+    try {
+        $sessionCount = \Illuminate\Support\Facades\DB::table('sessions')->count();
+        $sessionStatus = "OK - {$sessionCount} sessions";
+    } catch (\Exception $e) {
+        $sessionStatus = 'FAILED: ' . $e->getMessage();
+    }
+
+    return response()->json([
+        'app_env'          => config('app.env'),
+        'app_url'          => config('app.url'),
+        'app_debug'        => config('app.debug'),
+        'db_connection'    => config('database.default'),
+        'db_status'        => $dbStatus,
+        'session_driver'   => config('session.driver'),
+        'session_encrypt'  => config('session.encrypt'),
+        'session_domain'   => config('session.domain'),
+        'session_status'   => $sessionStatus,
+        'php_version'      => PHP_VERSION,
+        'csrf_token'       => csrf_token(),
+    ]);
+});
+
 // 1. RUTE PUBLIK (Tanpa Login)
 Route::get('/', fn() => redirect()->route('login'));
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
