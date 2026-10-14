@@ -75,16 +75,16 @@ class SecurityHeadersMiddleware
             ]);
         } else {
             $csp = implode('; ', [
-                "default-src 'self'",
-                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
-                "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com",
+                "default-src 'self' 'unsafe-inline' 'unsafe-eval'",
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com",
+                "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com https://fonts.gstatic.com",
                 "font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com data:",
-                "img-src 'self' data: blob:",
-                "connect-src 'self'",
+                "img-src 'self' data: blob: https:",
+                "connect-src 'self' https: wss:",
                 "frame-ancestors 'self'",
                 "object-src 'none'",
                 "base-uri 'self'",
-                "form-action 'self'",
+                "form-action 'self' https://cashiershanghaejo-production.up.railway.app",
             ]);
         }
         $response->headers->set('Content-Security-Policy', $csp);

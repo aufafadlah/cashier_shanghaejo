@@ -39,15 +39,21 @@ public function store(Request $request)
 {
     // 1. Validasi
     $validated = $request->validate([
-        'nama_cabang' => 'required',
-        'alamat'      => 'required',
-        'is_active'   => 'nullable|boolean',
+        'nama_cabang' => 'required|string|max:255',
+        'alamat'      => 'required|string',
+        'is_active'   => 'nullable',
     ]);
 
-    // 2. Simpan menggunakan Eloquent (Otomatis handle created_at/updated_at)
-    Cabang::create($validated);
+    // 2. Default is_active = true jika tidak dipilih
+    $validated['is_active'] = isset($validated['is_active']) ? (bool) $validated['is_active'] : true;
 
-    return redirect()->route('admin.cabang.index')->with('success', 'Cabang berhasil ditambahkan');
+    // 3. Simpan menggunakan Eloquent
+    try {
+        Cabang::create($validated);
+        return redirect()->route('admin.cabang.index')->with('success', 'Cabang berhasil ditambahkan');
+    } catch (\Exception $e) {
+        return redirect()->back()->with('error', 'Gagal menyimpan: ' . $e->getMessage())->withInput();
+    }
 }
 
 public function edit($id)
