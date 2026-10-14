@@ -6,12 +6,15 @@ use Illuminate\Foundation\Configuration\Middleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
-        web: __DIR__.'/../routes/web.php', // PASTIKAN BARIS INI ADA
+        web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
-        channels: __DIR__.'/../routes/channels.php', // Tambahkan ini agar channels.php terbaca
+        channels: __DIR__.'/../routes/channels.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Percayai proxy Railway agar Laravel tahu request aslinya HTTPS
+        $middleware->trustProxies(at: '*');
+
         // Daftarkan alias role Anda di sini
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
@@ -25,4 +28,3 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();
-    
