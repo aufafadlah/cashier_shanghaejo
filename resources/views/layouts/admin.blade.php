@@ -21,6 +21,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     {{-- Speculation Rules API untuk instant prerender klik menu/sidebar di browser Chromium --}}
+    {{-- PENTING: Halaman form (create/edit) dikecualikan agar CSRF token tidak expired --}}
     <script type="speculationrules">
     {
         "prerender": [
@@ -30,8 +31,12 @@
                     "and": [
                         { "href_matches": "/*" },
                         { "not": { "href_matches": "*/logout" } },
-                        { "not": { "href_matches": "*destroy*" } },
-                        { "not": { "href_matches": "*delete*" } }
+                        { "not": { "href_matches": "*/destroy*" } },
+                        { "not": { "href_matches": "*/delete*" } },
+                        { "not": { "href_matches": "*/create*" } },
+                        { "not": { "href_matches": "*/edit*" } },
+                        { "not": { "href_matches": "*/store*" } },
+                        { "not": { "href_matches": "*/update*" } }
                     ]
                 },
                 "eagerness": "moderate"
