@@ -76,26 +76,47 @@ function initAntiDoubleSubmit() {
 
         const submitBtns = form.querySelectorAll('button[type="submit"], input[type="submit"]');
         submitBtns.forEach(btn => {
-            btn.disabled = true;
-            btn.classList.add('opacity-70', 'cursor-not-allowed');
+            btn.classList.add('opacity-70', 'cursor-not-allowed', 'pointer-events-none');
             if (btn.tagName === 'BUTTON' && !btn.querySelector('.fa-spinner')) {
                 btn.dataset.originalContent = btn.innerHTML;
                 btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Menyimpan...';
             }
         });
 
+        // Delay penonaktifan tombol sedikit agar proses submit native browser tidak terbatalkan
+        setTimeout(() => {
+            submitBtns.forEach(btn => {
+                btn.disabled = true;
+            });
+        }, 10);
+
         // Reset proteksi setelah 7 detik jika halaman tidak berpindah (misal ada error validasi client)
         setTimeout(() => {
             form.dataset.submitting = 'false';
             submitBtns.forEach(btn => {
                 btn.disabled = false;
-                btn.classList.remove('opacity-70', 'cursor-not-allowed');
+                btn.classList.remove('opacity-70', 'cursor-not-allowed', 'pointer-events-none');
                 if (btn.dataset.originalContent) {
                     btn.innerHTML = btn.dataset.originalContent;
                 }
             });
         }, 7000);
-    }, true);
+    }, false);
+
+    // Reset jika kembali ke halaman (misal tombol Back browser / BFCache)
+    window.addEventListener('pageshow', function() {
+        document.querySelectorAll('form[data-submitting="true"]').forEach(form => {
+            form.dataset.submitting = 'false';
+            const submitBtns = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+            submitBtns.forEach(btn => {
+                btn.disabled = false;
+                btn.classList.remove('opacity-70', 'cursor-not-allowed', 'pointer-events-none');
+                if (btn.dataset.originalContent) {
+                    btn.innerHTML = btn.dataset.originalContent;
+                }
+            });
+        });
+    });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
