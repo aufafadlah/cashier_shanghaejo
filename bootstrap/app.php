@@ -23,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Security headers ditambahkan ke SEMUA response web
         $middleware->web(append: [
             \App\Http\Middleware\SecurityHeadersMiddleware::class,
+            \App\Http\Middleware\CheckUserStatus::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

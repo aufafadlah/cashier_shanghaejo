@@ -54,6 +54,9 @@ class LoginController extends Controller
 
             $request->session()->regenerate();
 
+            // Simpan hash password saat login untuk mendeteksi perubahan password oleh admin/pihak lain
+            session(['auth_password_hash' => $user->password]);
+
             if (Auth::user()->role == 'admin') {
                 return redirect()->route('admin.dashboard');
             }

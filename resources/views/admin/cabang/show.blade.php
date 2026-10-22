@@ -51,7 +51,7 @@
                     <div>
                         <label class="text-xs font-bold text-gray-400 uppercase">Terakhir Diperbarui</label>
                         <p class="text-gray-700 mt-2 font-medium">
-                            {{ $cabang->updated_at->diffForHumans() }}
+                            {{ $cabang->updated_at ? $cabang->updated_at->diffForHumans() : '-' }}
                         </p>
                     </div>
                 </div>

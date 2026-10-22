@@ -129,6 +129,11 @@ public function index(Request $request) {
 
         DB::table('tb_user')->where('id_user', $id)->update($data);
 
+        // Jika user dinonaktifkan atau password diubah, hapus sesi user tersebut dari database
+        if ((int) $request->is_active === 0 || $request->filled('password')) {
+            DB::table('sessions')->where('user_id', $id)->delete();
+        }
+
         return redirect()->route('admin.user.index')->with('success', 'Data user diperbarui!');
     }
 
@@ -153,6 +158,9 @@ public function index(Request $request) {
             return redirect()->route('admin.user.index')
                 ->with('error', 'Tidak dapat menghapus user: masih ada data transaksi terhubung!');
         }
+
+        // Hapus sesi user jika masih ada
+        DB::table('sessions')->where('user_id', $id)->delete();
 
         // 3. Hapus
         $user->delete();

@@ -28,8 +28,13 @@ Dashboard Monitoring: Ringkasan Omzet, Pengeluaran, dan Profitabilitas harian da
 Laporan Target vs Realisasi: Memantau efisiensi penjualan setiap menu dibandingkan dengan target stok yang ditetapkan.
 Multi-Payment Analytics: Laporan metode pembayaran (Cash vs QRIS) untuk mempermudah rekonsiliasi kas harian.
 
+<<<<<<< HEAD
 Tech Stack
 Framework: Laravel 12
+=======
+💻 Tech Stack
+Framework: Laravel 11 (Latest Version)
+>>>>>>> 20a796c (update logika login non aktif user)
 UI Engine: Blade Templating + [Tailwind CSS]
 Database: MySQL (Optimized with Snapshots & Soft Disable logic)
 Charts: Chart.js

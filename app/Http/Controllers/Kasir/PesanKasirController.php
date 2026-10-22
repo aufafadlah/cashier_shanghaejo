@@ -47,6 +47,32 @@ public function index()
     return view('kasir.pesan.index', compact('menus', 'toppings', 'cart', 'cabang'));
 }
 
+public function getSyncData()
+{
+    $id_cabang = Auth::user()->id_cabang;
+
+    $menus = DB::table('tb_menu')
+        ->join('branch_menu', 'tb_menu.id_menu', '=', 'branch_menu.menu_id')
+        ->where('branch_menu.branch_id', $id_cabang) 
+        ->where('branch_menu.is_active', 1)
+        ->select(
+            'tb_menu.id_menu', 
+            'tb_menu.nama_menu', 
+            'branch_menu.harga_menu'
+        ) 
+        ->get();
+
+    $toppings = DB::table('tb_toping')
+        ->where('is_active', 1)
+        ->get();
+
+    return response()->json([
+        'success'  => true,
+        'menus'    => $menus,
+        'toppings' => $toppings,
+    ]);
+}
+
 public function addToCart(Request $request)
 {
     $request->validate([
@@ -56,23 +82,27 @@ public function addToCart(Request $request)
 
     $id_cabang = Auth::user()->id_cabang;
 
-    // ✅ UBAH BAGIAN INI: Ambil menu dan harga spesifik cabang
+    // ✅ Ambil menu dan harga spesifik cabang yang masih aktif
     $menu = DB::table('tb_menu')
         ->join('branch_menu', 'tb_menu.id_menu', '=', 'branch_menu.menu_id')
         ->where('tb_menu.id_menu', $request->menu_id)
         ->where('branch_menu.branch_id', $id_cabang)
+        ->where('branch_menu.is_active', 1)
         ->select('tb_menu.id_menu', 'tb_menu.nama_menu', 'branch_menu.harga_menu')
         ->first();
 
-    // Proteksi jika menu tidak ada di cabang tersebut
+    // Proteksi jika menu tidak ada atau telah dinonaktifkan
     if (!$menu) {
         if ($request->wantsJson()) {
-            return response()->json(['success' => false, 'message' => 'Menu tidak tersedia untuk cabang ini!'], 404);
+            return response()->json(['success' => false, 'message' => 'Menu tidak tersedia atau telah dinonaktifkan!'], 404);
         }
-        return redirect()->back()->with('error', 'Menu tidak tersedia untuk cabang ini!');
+        return redirect()->back()->with('error', 'Menu tidak tersedia atau telah dinonaktifkan!');
     }
 
-    $selectedToppings = DB::table('tb_toping')->whereIn('id_toping', $request->toppings ?? [])->get();
+    $selectedToppings = DB::table('tb_toping')
+        ->whereIn('id_toping', $request->toppings ?? [])
+        ->where('is_active', 1)
+        ->get();
 
     $processedToppings = [];
     $toppingTotalHarga = 0;

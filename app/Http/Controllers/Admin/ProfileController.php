@@ -65,6 +65,9 @@ class ProfileController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
+        // Perbarui hash sesi saat ini agar user sendiri tidak ter-logout
+        session(['auth_password_hash' => $user->password]);
+
         return back()->with('success', 'Password berhasil diganti!');
     }
 }

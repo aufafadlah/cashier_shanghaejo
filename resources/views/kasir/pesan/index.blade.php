@@ -10,9 +10,74 @@
             qty: 1,
             activeMenu: {id: "", nama: "", harga: 0},
             selectedToppings: [],
+            menusList: @json($menus),
             toppingsList: @json($toppings),
             cart: @json($cart),
             activeTab: "menu",
+            syncInterval: null,
+
+            init() {
+                // Background sync setiap 3 detik untuk realtime update menu/topping & deteksi auto-logout
+                this.syncInterval = setInterval(() => {
+                    this.syncLatestData();
+                }, 3000);
+            },
+
+            async syncLatestData() {
+                try {
+                    const res = await fetch('{{ route("kasir.pesan.sync-data") }}', {
+                        headers: { 
+                            "Accept": "application/json",
+                            "X-Requested-With": "XMLHttpRequest"
+                        }
+                    });
+
+                    // Terdeteksi 401 Unauthorized (user nonaktif / cabang nonaktif / password diubah)
+                    if (res.status === 401) {
+                        const data = await res.json();
+                        clearInterval(this.syncInterval);
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Sesi Berakhir',
+                            text: data.message || 'Sesi Anda tidak lagi valid.',
+                            confirmButtonText: 'Ke Halaman Login',
+                            allowOutsideClick: false
+                        }).then(() => {
+                            window.location.href = data.redirect || '{{ route("login") }}';
+                        });
+                        return;
+                    }
+
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.success) {
+                            this.menusList = data.menus;
+                            this.toppingsList = data.toppings;
+
+                            // Jika menu yang sedang dibuka di modal detail dinonaktifkan oleh admin
+                            if (this.openDetail && !this.menusList.some(m => m.id_menu == this.activeMenu.id)) {
+                                this.openDetail = false;
+                                Swal.fire({
+                                    icon: 'info',
+                                    title: 'Menu Dinonaktifkan',
+                                    text: 'Menu yang Anda pilih baru saja dinonaktifkan oleh Administrator.',
+                                    timer: 2000,
+                                    showConfirmButton: false
+                                });
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.warn('Sync background error:', err);
+                }
+            },
+
+            get filteredMenus() {
+                if (!this.searchQuery) return this.menusList;
+                return this.menusList.filter(m => 
+                    m.nama_menu.toLowerCase().includes(this.searchQuery.toLowerCase())
+                );
+            },
 
             getFreeToppingIds() {
                 let eligibleSelected = this.toppingsList
@@ -171,7 +236,7 @@
                         <i class="fa-solid fa-store mr-1 text-teal-600"></i>{{ $cabang->nama_cabang ?? 'Cabang Aktif' }}
                     </span>
                 </div>
-                <span class="text-xs bg-teal-50 text-teal-700 px-2.5 py-1 rounded-lg font-bold uppercase">Tersedia: {{ count($menus) }}</span>
+                <span class="text-xs bg-teal-50 text-teal-700 px-2.5 py-1 rounded-lg font-bold uppercase" x-text="'Tersedia: ' + menusList.length"></span>
             </div>
 
             <div class="shrink-0 px-3.5 sm:px-4 py-2.5 border-b border-slate-50">
@@ -183,28 +248,29 @@
             </div>
             
             <div class="flex-1 overflow-y-auto px-3.5 sm:px-4 py-2.5 custom-scrollbar space-y-2 min-h-0">
-                @forelse($menus as $menu)
-                <div x-show="'{{ addslashes(strtolower($menu->nama_menu)) }}'.includes(searchQuery.toLowerCase())"
-                     @click="activeMenu = {id: '{{ $menu->id_menu }}', nama: '{{ addslashes($menu->nama_menu) }}', harga: {{ (float)$menu->harga_menu }} }; openDetail = true; qty = 1; selectedToppings = [];" 
-                     class="cursor-pointer group bg-white border border-slate-100 rounded-xl p-2.5 sm:p-3 flex justify-between items-center hover:border-teal-500 hover:shadow-md transition-all">
-                    <div class="flex items-center gap-3 min-w-0">
-                        <div class="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-teal-50 transition-colors">
-                            <i class="fa-solid fa-utensils text-slate-400 group-hover:text-teal-600 text-base"></i>
+                <template x-for="menu in filteredMenus" :key="menu.id_menu">
+                    <div @click="activeMenu = {id: menu.id_menu, nama: menu.nama_menu, harga: parseFloat(menu.harga_menu) }; openDetail = true; qty = 1; selectedToppings = [];" 
+                         class="cursor-pointer group bg-white border border-slate-100 rounded-xl p-2.5 sm:p-3 flex justify-between items-center hover:border-teal-500 hover:shadow-md transition-all">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-teal-50 transition-colors">
+                                <i class="fa-solid fa-utensils text-slate-400 group-hover:text-teal-600 text-base"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <span class="block font-bold text-sm sm:text-base text-slate-800 truncate" x-text="menu.nama_menu"></span>
+                                <span class="text-teal-700 font-bold text-xs sm:text-sm" x-text="'Rp ' + parseInt(menu.harga_menu).toLocaleString('id-ID')"></span>
+                            </div>
                         </div>
-                        <div class="min-w-0">
-                            <span class="block font-bold text-sm sm:text-base text-slate-800 truncate">{{ $menu->nama_menu }}</span>
-                            <span class="text-teal-700 font-bold text-xs sm:text-sm">Rp {{ number_format($menu->harga_menu) }}</span>
-                        </div>
+                        <i class="fa-solid fa-circle-plus text-slate-300 text-xl group-hover:text-teal-600 transition-colors shrink-0 ml-2"></i>
                     </div>
-                    <i class="fa-solid fa-circle-plus text-slate-300 text-xl group-hover:text-teal-600 transition-colors shrink-0 ml-2"></i>
-                </div>
-                @empty
-                <div class="flex flex-col items-center justify-center h-48 opacity-60">
-                    <i class="fa-solid fa-triangle-exclamation text-3xl text-amber-400 mb-3"></i>
-                    <p class="text-sm font-bold text-slate-500 text-center">Belum ada menu aktif</p>
-                    <p class="text-xs text-slate-400 text-center mt-1">Hubungi Admin untuk mengaktifkan menu di cabang ini.</p>
-                </div>
-                @endforelse
+                </template>
+
+                <template x-if="filteredMenus.length === 0">
+                    <div class="flex flex-col items-center justify-center h-48 opacity-60">
+                        <i class="fa-solid fa-triangle-exclamation text-3xl text-amber-400 mb-3"></i>
+                        <p class="text-sm font-bold text-slate-500 text-center">Belum ada menu aktif</p>
+                        <p class="text-xs text-slate-400 text-center mt-1">Hubungi Admin untuk mengaktifkan menu di cabang ini.</p>
+                    </div>
+                </template>
             </div>
         </div>
 
@@ -325,20 +391,23 @@
                     <div class="max-h-[35vh] overflow-y-auto pr-1 custom-scrollbar mb-6">
                         <p class="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-widest">Pilih Topping</p>
                         <div class="grid grid-cols-1 gap-2">
-                            @foreach($toppings as $top)
-                            <label class="relative flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50 cursor-pointer has-[:checked]:border-teal-500 has-[:checked]:bg-teal-50 transition-all shadow-sm">
-                                <div class="flex items-center gap-3">
-                                    <input type="checkbox" name="toppings[]" value="{{ $top->id_toping }}" x-model="selectedToppings" class="w-4 h-4 rounded text-teal-600 border-slate-300">
-                                    <div class="flex items-center gap-1.5 flex-wrap">
-                                        <span class="text-xs font-bold text-slate-700 uppercase">{{ $top->nama_toping }}</span>
-                                        @if($top->bisa_gratis)
-                                            <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-teal-100 text-teal-700">Bisa Promo</span>
-                                        @endif
+                            <template x-for="top in toppingsList" :key="top.id_toping">
+                                <label class="relative flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50 cursor-pointer has-[:checked]:border-teal-500 has-[:checked]:bg-teal-50 transition-all shadow-sm">
+                                    <div class="flex items-center gap-3">
+                                        <input type="checkbox" name="toppings[]" :value="top.id_toping" x-model="selectedToppings" class="w-4 h-4 rounded text-teal-600 border-slate-300">
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <span class="text-xs font-bold text-slate-700 uppercase" x-text="top.nama_toping"></span>
+                                            <template x-if="top.bisa_gratis">
+                                                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-teal-100 text-teal-700">Bisa Promo</span>
+                                            </template>
+                                        </div>
                                     </div>
-                                </div>
-                                <span class="text-[10px] font-bold text-green-600" x-text="getToppingLabel({{ $top->id_toping }})"></span>
-                            </label>
-                            @endforeach
+                                    <span class="text-[10px] font-bold text-green-600" x-text="getToppingLabel(top.id_toping)"></span>
+                                </label>
+                            </template>
+                            <template x-if="toppingsList.length === 0">
+                                <p class="text-xs text-slate-400 text-center py-4">Tidak ada topping aktif saat ini.</p>
+                            </template>
                         </div>
                     </div>
 

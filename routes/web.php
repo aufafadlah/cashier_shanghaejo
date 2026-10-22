@@ -62,6 +62,7 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:kasir'])->prefix('kasir')->name('kasir.')->group(function () {
         Route::controller(PesanKasirController::class)->group(function () {
             Route::get('/pesan', 'index')->name('pesan.index');
+            Route::get('/pesan/sync-data', 'getSyncData')->name('pesan.sync-data');
             Route::post('/pesan/add', 'addToCart')->name('pesan.add');
             Route::post('/pesan/checkout', 'checkout')->name('pesan.checkout');
             Route::post('/pesan/remove/{index}', 'removeCart')->name('pesan.remove');
